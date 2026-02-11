@@ -5,7 +5,7 @@ import { useState } from "react";
 export default function AdminReviewsPage() {
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
-
+ 
   async function syncCourses() {
     setMsg("");
     setLoading(true);
