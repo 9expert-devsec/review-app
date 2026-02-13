@@ -9,36 +9,16 @@ function cx(...a) {
   return a.filter(Boolean).join(" ");
 }
 
-// เช็คว่าเมนูไหนกำลังทำงานอยู่ (รองรับ /admin/... และ /{KEY}/admin/...)
+// เช็คว่าเมนูไหนกำลังทำงานอยู่
 function isActivePath(pathname, href) {
-  const p = String(pathname || "");
-  const h = String(href || "");
-  if (!p || !h) return false;
-
-  // normalize ทั้งคู่ให้เป็น route "จริง" ที่ขึ้นต้นด้วย /admin/...
-  const norm = (x) => {
-    if (x.startsWith("/admin")) return x;
-    const seg = x.split("/").filter(Boolean);
-    // /{key}/admin/... -> /admin/...
-    if (seg[1] === "admin") return "/" + seg.slice(1).join("/");
-    return x;
-  };
-
-  const pn = norm(p);
-  const hn = norm(h);
-
-  if (hn === "/admin/dashboard") return pn === "/admin/dashboard";
-  return pn === hn || pn.startsWith(hn + "/");
+  if (href === "/admin/dashboard") return pathname === "/admin/dashboard";
+  return pathname === href || pathname.startsWith(href + "/");
 }
 
-// กำหนดหัวข้อหน้าตามเส้นทาง (รองรับ /{KEY}/admin/...)
+// กำหนดหัวข้อหน้าตามเส้นทาง
 function pageTitleFromPath(pathname) {
-  const p = String(pathname || "");
-  const seg = p.split("/").filter(Boolean);
-  const normalized = seg[1] === "admin" ? "/" + seg.slice(1).join("/") : p;
-
-  if (normalized.startsWith("/admin/reviews")) return "Reviews";
-  if (normalized.startsWith("/admin/reports")) return "Reports";
+  if (pathname.startsWith("/admin/reviews")) return "Reviews";
+  if (pathname.startsWith("/admin/reports")) return "Reports";
   return "Dashboard";
 }
 
@@ -68,63 +48,61 @@ export default function AdminShell({ children }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  // ✅ prefix สำหรับรองรับ Secret Path:
-  // ถ้าอยู่ /{KEY}/admin/... => basePrefix = "/{KEY}"
-  // ถ้าอยู่ /admin/...      => basePrefix = ""
-  const basePrefix = useMemo(() => {
-    const seg = pathname.split("/").filter(Boolean);
-    return seg[1] === "admin" ? `/${seg[0]}` : "";
-  }, [pathname]);
-
-  // ข้อมูลเมนู Navigation (อิง prefix)
+  // ข้อมูลเมนู Navigation
   const nav = useMemo(
     () => [
       {
-        href: `${basePrefix}/admin/dashboard`,
+        href: "/admin/dashboard",
         key: "dashboard",
         label: "Dashboard",
         desc: "สถิติและภาพรวม",
       },
       {
-        href: `${basePrefix}/admin/reviews`,
+        href: "/admin/reviews",
         key: "reviews",
         label: "Reviews",
         desc: "จัดการรีวิวทั้งหมด",
       },
       {
-        href: `${basePrefix}/admin/reports`,
+        href: "/admin/reports",
         key: "reports",
         label: "Reports",
         desc: "Export CSV/Report",
       },
     ],
-    [basePrefix],
+    [],
   );
 
   const title = pageTitleFromPath(pathname);
 
-  // Logout: ให้ server เป็นคนบอก redirectTo (เช่น /{KEY}/login)
+  // Logout: ให้ server clear cookie + คืน redirectTo
   async function logout() {
     try {
-      const r = await fetch("/api/admin/auth/logout", { method: "POST" });
-      const data = await r.json().catch(() => null);
+      const r = await fetch("/api/admin/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
 
-      const to = data?.redirectTo || (basePrefix ? `${basePrefix}/login` : "/");
+      let data = null;
+      const ct = r.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        data = await r.json().catch(() => null);
+      }
 
+      const to = data?.redirectTo || "/";
       router.replace(to);
       router.refresh();
       return;
     } catch (err) {
       console.error("Logout error", err);
+      router.replace("/");
+      router.refresh();
     }
-
-    router.replace(basePrefix ? `${basePrefix}/login` : "/");
-    router.refresh();
   }
 
   return (
     <div className="flex min-h-dvh bg-slate-50 text-slate-900 selection:bg-slate-900 selection:text-white">
-      {/* Mobile Topbar: แสดงผลเฉพาะบนมือถือ */}
+      {/* Mobile Topbar */}
       <div className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur md:hidden">
         <div className="flex items-center justify-between px-4 py-3">
           <button
@@ -148,7 +126,7 @@ export default function AdminShell({ children }) {
       {/* Mobile Drawer Overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm md:hidden transition-opacity"
+          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm md:hidden"
           onClick={() => setOpen(false)}
         />
       )}
@@ -199,7 +177,7 @@ export default function AdminShell({ children }) {
                         "group flex items-center gap-3 rounded-2xl px-3 py-3 transition-all duration-200",
                         active
                           ? "bg-slate-900 text-white shadow-lg shadow-slate-200"
-                          : "text-slate-700 hover:bg-slate-100 hover:translate-x-1",
+                          : "text-slate-700 hover:translate-x-1 hover:bg-slate-100",
                       )}
                     >
                       <Icon name={it.key} active={active} />
@@ -260,7 +238,7 @@ export default function AdminShell({ children }) {
                   {title}
                 </div>
                 <div className="mt-0.5 flex items-center gap-2">
-                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
                   <div className="text-[10px] font-mono uppercase tracking-tight text-slate-400">
                     Admin Session Active • {pathname}
                   </div>
