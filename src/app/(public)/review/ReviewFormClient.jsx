@@ -14,7 +14,7 @@ function Star({ filled, onClick }) {
       type="button"
       onClick={onClick}
       className={cx(
-        "text-2xl transition",
+        "text-4xl transition",
         filled ? "text-amber-400" : "text-slate-300 hover:text-slate-400",
       )}
       aria-label="star"
@@ -35,7 +35,15 @@ const hintCls = "mt-2 text-xs text-slate-500";
 
 function SectionTitle({ children }) {
   return (
-    <div className="mt-10 border-b border-slate-200 pb-3 text-base font-bold text-slate-900">
+    <div className="border-b border-slate-200 pb-3 text-base font-bold text-slate-900">
+      {children}
+    </div>
+  );
+}
+
+function SectionTitle2({ children }) {
+  return (
+    <div className="mt-5 border-b border-slate-200 pb-3 text-base font-bold text-slate-900">
       {children}
     </div>
   );
@@ -359,7 +367,7 @@ export default function WriteReviewClient() {
               </div>
             </div>
 
-            <SectionTitle>ข้อมูลหลักสูตร</SectionTitle>
+            <SectionTitle2>ข้อมูลหลักสูตร</SectionTitle2>
 
             <div className="mt-6">
               <label className={labelCls}>
@@ -401,7 +409,7 @@ export default function WriteReviewClient() {
               </div>
             </div>
 
-            <SectionTitle>เขียนรีวิว</SectionTitle>
+            <SectionTitle2>เขียนรีวิว</SectionTitle2>
 
             <div className="mt-6">
               <label className={labelCls}>

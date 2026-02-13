@@ -58,7 +58,7 @@ export default async function HomePage() {
   return (
     <div className="w-full">
       {/* Hero */}
-      <section className="bg-white py-16">
+      <section className="bg-white h-screen items-center justify-center flex">
         <div className="mx-auto max-w-5xl px-6 text-center">
           <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-amber-400" />
@@ -95,7 +95,7 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="mt-10 flex justify-center">
+          {/* <div className="mt-10 flex justify-center">
             <a
               href="#why"
               className="mt-10 inline-flex flex-col items-center justify-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition"
@@ -103,12 +103,12 @@ export default async function HomePage() {
               <span>เลื่อนลง</span>
               <ArrowDown className="h-4 w-4 animate-floatY" />
             </a>
-          </div>
+          </div> */}
         </div>
       </section>
 
       {/* Why share */}
-      <section
+      {/* <section
         id="why"
         className="w-full bg-[#f7f9fc] py-20 border-t border-slate-200/0"
       >
@@ -148,10 +148,10 @@ export default async function HomePage() {
             />
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Testimonials */}
-      <section className="w-full bg-white pt-20 pb-20 border-t border-slate-200/0">
+      {/* <section className="w-full bg-white pt-20 pb-20 border-t border-slate-200/0">
         <div className="mx-auto max-w-6xl px-6">
           <div className="text-center">
             <div className="text-xs font-semibold tracking-[0.25em] text-blue-600">
@@ -163,10 +163,10 @@ export default async function HomePage() {
             <p className="mt-4 text-slate-600">
               ประสบการณ์จริงจากผู้เรียนที่ประสบความสำเร็จ
             </p>
-          </div>
+          </div> */}
 
           {/* ✅ เปลี่ยนจาก grid static เป็น carousel */}
-          <TestimonialCarouselClient items={reviews} />
+          {/* <TestimonialCarouselClient items={reviews} />
 
           <div className="mt-14 flex justify-center">
             <Link
@@ -183,7 +183,7 @@ export default async function HomePage() {
             </Link>
           </div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 }
