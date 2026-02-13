@@ -28,16 +28,16 @@ export default function ThanksPage() {
         <h1 className="mt-10 text-4xl font-bold tracking-tight text-slate-900 md:text-5xl leading-14">
           ขอบคุณที่แบ่งปัน
           <br />
-          <span className="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
-            ประสบการณ์ของคุณ!
+          <span className="bg-gradient-to-b from-[#005CFF] to-[#005CFF] bg-clip-text text-transparent">
+            ประสบการณ์กับ 9Expert
           </span>
         </h1>
 
         {/* Description */}
         <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
-          เราได้รับข้อมูลรีวิวของคุณเรียบร้อยแล้ว ความคิดเห็นของคุณเป็น
+          เราได้รับรีวิวของคุณเรียบร้อยแล้ว ความคิดเห็นของคุณ
           <br className="hidden md:block" />
-          สิ่งที่มีค่าอย่างยิ่งสำหรับเราและชุมชนผู้อบรมของ 9Expert Training
+          มีส่วนสำคัญในการยกระดับคุณภาพการเรียนรู้ของ 9Expert
         </p>
 
         {/* Actions */}
@@ -46,7 +46,7 @@ export default function ThanksPage() {
             href="/"
             className={cx(
               "inline-flex items-center justify-center gap-2 rounded-2xl",
-              "bg-gradient-to-r from-blue-600 to-blue-400 px-7 py-4 text-sm font-bold text-white",
+              "bg-gradient-to-r from-[#005CFF] to-[#2486FF] px-7 py-4 text-sm font-bold text-white",
               "shadow-[0_18px_40px_rgba(37,99,235,0.28)]",
               "hover:bg-blue-700 transition active:scale-[0.98]",
             )}

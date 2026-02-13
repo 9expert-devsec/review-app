@@ -1,9 +1,11 @@
+// src/app/api/admin/reviews/[id]/route.js
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import dbConnect from "@/lib/mongoose";
 import Review from "@/models/Review";
 import Course from "@/models/Course";
 import { requireAdmin } from "@/lib/adminAuth.server";
+import { v2 as cloudinary } from "cloudinary";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +21,24 @@ function bad(msg, status = 400) {
 }
 function isValidId(id) {
   return mongoose.isValidObjectId(id);
+}
+
+function ensureCloudinaryEnv() {
+  const cloud_name = clean(process.env.CLOUDINARY_CLOUD_NAME);
+  const api_key = clean(process.env.CLOUDINARY_API_KEY);
+  const api_secret = clean(process.env.CLOUDINARY_API_SECRET);
+  if (!cloud_name || !api_key || !api_secret) {
+    throw new Error("Missing Cloudinary env");
+  }
+  cloudinary.config({ cloud_name, api_key, api_secret });
+}
+
+async function destroyCloudinary(publicId) {
+  const pid = clean(publicId);
+  if (!pid) return;
+  ensureCloudinaryEnv();
+  // destroy image
+  await cloudinary.uploader.destroy(pid, { resource_type: "image" });
 }
 
 export async function GET(req, ctx) {
@@ -40,7 +60,7 @@ export async function GET(req, ctx) {
 
 export async function PUT(req, ctx) {
   try {
-    const admin = await requireAdmin(); // ถ้า requireAdmin คืนข้อมูลผู้ใช้ได้ จะเอาไว้ใส่ moderatedBy
+    const admin = await requireAdmin();
     await dbConnect();
 
     const { id } = await ctx.params;
@@ -49,12 +69,6 @@ export async function PUT(req, ctx) {
     const body = await req.json().catch(() => ({}));
     const patch = {};
     const now = new Date();
-
-    if (body.displayOrder !== undefined) {
-      const n = Number(body.displayOrder);
-      if (!Number.isFinite(n)) return bad("displayOrder invalid", 400);
-      patch.displayOrder = Math.max(0, Math.min(9999, Math.floor(n)));
-    }
 
     // ---- course ----
     if (body.courseId !== undefined) {
@@ -94,61 +108,46 @@ export async function PUT(req, ctx) {
 
     if (body.isActive !== undefined) patch.isActive = !!body.isActive;
 
-    // ---- moderation: action or status ----
-    // รองรับ 2 แบบ:
-    // 1) { action: "approve" } หรือ { action:"reject", reason:"..." }
-    // 2) { status: "approved" | "rejected" | "pending", rejectReason? }
-    const action = clean(body.action);
-    const status = clean(body.status);
+    // ---------------- Avatar (NEW) ----------------
+    // รองรับ:
+    // - { avatarAction: "remove" }  -> ลบรูปเดิมทั้งใน DB และ Cloudinary
+    // - { avatarUrl, avatarPublicId } -> แทนที่รูปเดิม (ลบรูปเก่าบน Cloudinary ถ้ามี)
+    const avatarAction = clean(body.avatarAction);
 
-    if (action) {
-      if (action === "approve") {
-        patch.status = "approved";
-        patch.statusUpdatedAt = now;
-        patch.approvedAt = now;
-        patch.rejectedAt = null;
-        patch.rejectReason = "";
-      } else if (action === "reject") {
-        patch.status = "rejected";
-        patch.statusUpdatedAt = now;
-        patch.rejectedAt = now;
-        patch.approvedAt = null;
-        patch.rejectReason = clean(body.reason || body.rejectReason || "");
-      } else if (action === "pending") {
-        patch.status = "pending";
-        patch.statusUpdatedAt = now;
-        patch.approvedAt = null;
-        patch.rejectedAt = null;
-        patch.rejectReason = clean(body.rejectReason || "");
-      } else {
-        return bad("Invalid action", 400);
+    // ต้องอ่านตัวเดิมก่อน เพื่อรู้ publicId เก่าไว้ลบ
+    const existing = await Review.findById(id)
+      .select("avatarUrl avatarPublicId")
+      .lean();
+    if (!existing) return bad("Not found", 404);
+
+    if (avatarAction === "remove") {
+      // ลบรูปเดิม
+      if (existing.avatarPublicId) {
+        await destroyCloudinary(existing.avatarPublicId);
       }
+      patch.avatarUrl = "";
+      patch.avatarPublicId = "";
+    } else {
+      // อัปเดตรูปใหม่ (ถ้าส่งมา)
+      if (body.avatarUrl !== undefined || body.avatarPublicId !== undefined) {
+        const nextUrl = clean(body.avatarUrl);
+        const nextPid = clean(body.avatarPublicId);
 
-      // ถ้า requireAdmin() คืน admin info ได้ ก็ใส่ได้ เช่น admin.email
-      if (admin?.email) patch.moderatedBy = clean(admin.email);
-    } else if (status) {
-      if (!["pending", "approved", "rejected"].includes(status))
-        return bad("Invalid status", 400);
+        if (!nextUrl || !nextPid)
+          return bad("avatarUrl/avatarPublicId required", 400);
 
-      patch.status = status;
-      patch.statusUpdatedAt = now;
+        // ลบรูปเก่าถ้ามีและต่างจากอันใหม่
+        if (existing.avatarPublicId && existing.avatarPublicId !== nextPid) {
+          await destroyCloudinary(existing.avatarPublicId);
+        }
 
-      if (status === "approved") {
-        patch.approvedAt = now;
-        patch.rejectedAt = null;
-        patch.rejectReason = "";
-      } else if (status === "rejected") {
-        patch.rejectedAt = now;
-        patch.approvedAt = null;
-        patch.rejectReason = clean(body.rejectReason || "");
-      } else {
-        patch.approvedAt = null;
-        patch.rejectedAt = null;
-        patch.rejectReason = clean(body.rejectReason || "");
+        patch.avatarUrl = nextUrl;
+        patch.avatarPublicId = nextPid;
       }
-
-      if (admin?.email) patch.moderatedBy = clean(admin.email);
     }
+
+    // optional: moderatedBy
+    if (admin?.email) patch.moderatedBy = clean(admin.email);
 
     const item = await Review.findByIdAndUpdate(id, patch, {
       new: true,

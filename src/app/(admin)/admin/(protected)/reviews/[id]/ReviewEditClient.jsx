@@ -3,15 +3,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import ImageLightbox from "@/components/ui/ImageLightbox";
-import { usePathname } from "next/navigation";
 
 function getAdminBase(pathname) {
   const p = String(pathname || "");
   const i = p.indexOf("/admin");
   if (i === -1) return "/admin";
-  return p.slice(0, i) + "/admin"; // ถ้ามี /{key}/admin/... จะได้ /{key}/admin
+  return p.slice(0, i) + "/admin";
 }
 
 function clean(x) {
@@ -115,9 +114,10 @@ function Switch({ checked, onChange, labelOn, labelOff }) {
   );
 }
 
+const MAX_AVATAR_MB = 5;
+
 export default function ReviewEditClient({ id }) {
   const router = useRouter();
-
   const pathname = usePathname();
   const adminBase = useMemo(() => getAdminBase(pathname), [pathname]);
 
@@ -141,6 +141,14 @@ export default function ReviewEditClient({ id }) {
   const [comment, setComment] = useState("");
   const [isActive, setIsActive] = useState(false);
 
+  // avatar controls (admin)
+  const fileRef = useRef(null);
+  const [avatarFile, setAvatarFile] = useState(null); // File ที่เลือกใหม่ (ยังไม่อัปโหลดจนกดบันทึก)
+  const [avatarPreview, setAvatarPreview] = useState(""); // objectURL
+  const [avatarRemove, setAvatarRemove] = useState(false); // ตั้งใจลบรูปเดิม
+  const [avatarBusy, setAvatarBusy] = useState(false); // ตอนอัปโหลดรูป
+  const [avatarErr, setAvatarErr] = useState("");
+
   const initialRef = useRef(null);
 
   const selectedCourseName = useMemo(() => {
@@ -159,9 +167,23 @@ export default function ReviewEditClient({ id }) {
     return true;
   }, [courseId, reviewerName, reviewerEmail, headline, rating]);
 
+  const avatarUrlCurrent = clean(item?.avatarUrl) || "";
+  const avatarPublicIdCurrent = clean(item?.avatarPublicId) || "";
+
+  // แสดงรูปที่ "ควร" ใช้ใน UI ตอนนี้:
+  // - ถ้าเลือกไฟล์ใหม่ => preview
+  // - ถ้ากดลบรูป => ไม่มีรูป
+  // - ไม่งั้นใช้ของเดิมจาก item
+  const avatarDisplayUrl = useMemo(() => {
+    if (avatarRemove) return "";
+    if (avatarPreview) return avatarPreview;
+    return avatarUrlCurrent;
+  }, [avatarRemove, avatarPreview, avatarUrlCurrent]);
+
   const dirty = useMemo(() => {
     if (!initialRef.current) return false;
-    const now = {
+
+    const baseNow = {
       courseId: String(courseId || ""),
       reviewerName: clean(reviewerName),
       reviewerEmail: clean(reviewerEmail),
@@ -171,8 +193,21 @@ export default function ReviewEditClient({ id }) {
       headline: clean(headline),
       comment: String(comment || ""),
       isActive: !!isActive,
+      avatarUrl: avatarRemove ? "" : initialRef.current.avatarUrl, // base compare: ถ้าลบรูปถือว่า url ว่าง
+      avatarPublicId: avatarRemove ? "" : initialRef.current.avatarPublicId,
     };
-    return JSON.stringify(now) !== JSON.stringify(initialRef.current);
+
+    const baseInitial = initialRef.current;
+
+    const baseDirty = JSON.stringify(baseNow) !== JSON.stringify(baseInitial);
+
+    // avatarFile = เลือกรูปใหม่ ยังไม่อัปโหลด => ถือว่า dirty
+    const avatarFileDirty = !!avatarFile;
+
+    // avatarRemove dirty เฉพาะตอนมีรูปเดิมจริง ๆ
+    const avatarRemoveDirty = avatarRemove && !!baseInitial.avatarUrl;
+
+    return baseDirty || avatarFileDirty || avatarRemoveDirty;
   }, [
     courseId,
     reviewerName,
@@ -183,16 +218,16 @@ export default function ReviewEditClient({ id }) {
     headline,
     comment,
     isActive,
+    avatarFile,
+    avatarRemove,
   ]);
 
   async function loadCourses() {
     const r = await fetch("/api/admin/courses", { cache: "no-store" });
     const j = await r.json().catch(() => ({}));
-
     if (!r.ok || !j?.ok) {
       throw new Error(j?.error || `Load courses failed (${r.status})`);
     }
-
     setCourses(j.items || []);
   }
 
@@ -228,6 +263,7 @@ export default function ReviewEditClient({ id }) {
         setLoading(true);
         setErr("");
         setOkMsg("");
+        setAvatarErr("");
 
         await loadCourses();
         const it = await loadItem();
@@ -245,6 +281,8 @@ export default function ReviewEditClient({ id }) {
           headline: it.headline || it.title || "",
           comment: it.comment || it.body || "",
           isActive: !!it.isActive,
+          avatarUrl: clean(it.avatarUrl) || "",
+          avatarPublicId: clean(it.avatarPublicId) || "",
         };
 
         setCourseId(next.courseId);
@@ -256,6 +294,11 @@ export default function ReviewEditClient({ id }) {
         setHeadline(next.headline);
         setComment(next.comment);
         setIsActive(next.isActive);
+
+        // reset avatar controls
+        setAvatarFile(null);
+        setAvatarRemove(false);
+        setAvatarErr("");
 
         initialRef.current = next;
       } catch (e) {
@@ -272,11 +315,56 @@ export default function ReviewEditClient({ id }) {
     };
   }, [id]);
 
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(avatarFile);
+    setAvatarPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [avatarFile]);
+
+  function pickAvatar(file) {
+    if (!file) return;
+
+    setAvatarErr("");
+
+    if (!file.type?.startsWith("image/")) {
+      setAvatarErr("ไฟล์รูปภาพไม่ถูกต้อง (ต้องเป็นไฟล์รูปภาพเท่านั้น)");
+      return;
+    }
+
+    if (file.size > MAX_AVATAR_MB * 1024 * 1024) {
+      setAvatarErr(`ไฟล์ใหญ่เกินไป (เกิน ${MAX_AVATAR_MB}MB)`);
+      return;
+    }
+
+    // เลือกรูปใหม่ = ไม่ลบรูป (แทนที่)
+    setAvatarRemove(false);
+    setAvatarFile(file);
+  }
+
+  async function uploadAvatar(file) {
+    const fd = new FormData();
+    fd.append("file", file);
+
+    const res = await fetch("/api/upload/review-avatar", {
+      method: "POST",
+      body: fd,
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok) throw new Error(data?.error || "Upload failed");
+    return data; // { ok:true, url, publicId, ... }
+  }
+
   async function save() {
     try {
       setSaving(true);
       setErr("");
       setOkMsg("");
+      setAvatarErr("");
 
       if (!canSave) {
         throw new Error(
@@ -295,6 +383,18 @@ export default function ReviewEditClient({ id }) {
         comment: String(comment || ""),
         isActive: !!isActive,
       };
+
+      // ---- Avatar logic ----
+      // 1) ถ้าตั้งใจลบรูป -> ส่ง avatarAction: "remove"
+      // 2) ถ้าเลือกไฟล์ใหม่ -> อัปโหลดก่อน แล้วแนบ avatarUrl/publicId ไปกับ PUT
+      if (avatarRemove && (avatarUrlCurrent || avatarPublicIdCurrent)) {
+        payload.avatarAction = "remove";
+      } else if (avatarFile) {
+        setAvatarBusy(true);
+        const up = await uploadAvatar(avatarFile);
+        payload.avatarUrl = clean(up.url);
+        payload.avatarPublicId = clean(up.publicId);
+      }
 
       const r = await fetch(`/api/admin/reviews/${id}`, {
         method: "PUT",
@@ -317,12 +417,20 @@ export default function ReviewEditClient({ id }) {
         headline: payload.headline,
         comment: payload.comment,
         isActive: payload.isActive,
+        avatarUrl: clean(j.item?.avatarUrl) || "",
+        avatarPublicId: clean(j.item?.avatarPublicId) || "",
       };
+
+      // reset avatar UI after saved
+      setAvatarFile(null);
+      setAvatarRemove(false);
+      setAvatarErr("");
 
       setOkMsg("บันทึกสำเร็จ");
     } catch (e) {
       setErr(e.message || "Error");
     } finally {
+      setAvatarBusy(false);
       setSaving(false);
     }
   }
@@ -334,8 +442,6 @@ export default function ReviewEditClient({ id }) {
     if (!j.ok) return alert(j.error || "Delete failed");
     router.push(`${adminBase}/reviews`);
   }
-
-  const avatarUrl = clean(item?.avatarUrl) || ""; // ถ้าต่อไปมี legacy field ก็ค่อย OR เพิ่มได้
 
   return (
     <div>
@@ -350,7 +456,7 @@ export default function ReviewEditClient({ id }) {
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="text-sm text-slate-500">
-            <Link href="/admin/reviews" className="hover:underline">
+            <Link href={`${adminBase}/reviews`} className="hover:underline">
               Reviews
             </Link>{" "}
             <span className="mx-1">/</span> Edit
@@ -566,16 +672,20 @@ export default function ReviewEditClient({ id }) {
                   <div className="flex items-center justify-end gap-2">
                     <Link
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                      href="/admin/reviews"
+                      href={`${adminBase}/reviews`}
                     >
                       ยกเลิก
                     </Link>
                     <button
-                      disabled={!canSave || saving}
+                      disabled={!canSave || saving || avatarBusy}
                       onClick={save}
                       className="rounded-2xl bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                     >
-                      {saving ? "กำลังบันทึก..." : "บันทึก"}
+                      {avatarBusy
+                        ? "กำลังอัปโหลดรูป..."
+                        : saving
+                          ? "กำลังบันทึก..."
+                          : "บันทึก"}
                     </button>
                   </div>
                 </div>
@@ -645,11 +755,126 @@ export default function ReviewEditClient({ id }) {
                 </div>
               </div>
 
+              {/* Avatar manager */}
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-semibold text-slate-600">
+                      Avatar (รูปโปรไฟล์)
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      เลือกรูปใหม่/ลบรูปเดิม แล้วกด “บันทึก”
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => pickAvatar(e.target.files?.[0])}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+                    >
+                      อัปโหลดใหม่
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!avatarUrlCurrent && !avatarPreview}
+                      onClick={() => {
+                        // ตั้งใจลบรูปเดิม + เคลียร์ไฟล์ใหม่ถ้ามี
+                        setAvatarFile(null);
+                        setAvatarRemove(true);
+                        setAvatarErr("");
+                      }}
+                      className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                    >
+                      ลบรูป
+                    </button>
+                  </div>
+                </div>
+
+                {avatarErr ? (
+                  <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                    {avatarErr}
+                  </div>
+                ) : null}
+
+                <div className="mt-3">
+                  {avatarDisplayUrl ? (
+                    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                      <button
+                        type="button"
+                        onClick={() => setLightboxUrl(avatarDisplayUrl)}
+                        className="h-16 w-16 overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200"
+                        title="คลิกเพื่อดูรูปเต็ม"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={avatarDisplayUrl}
+                          alt="avatar"
+                          className="h-full w-full object-cover"
+                        />
+                      </button>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-slate-900">
+                          {avatarRemove
+                            ? "กำลังจะลบรูป"
+                            : avatarFile
+                              ? "รูปใหม่ (ยังไม่บันทึก)"
+                              : "รูปปัจจุบัน"}
+                        </div>
+                        <div className="mt-0.5 text-xs text-slate-500">
+                          {avatarFile
+                            ? `ไฟล์: ${avatarFile.name} • จะอัปโหลดเมื่อกดบันทึก`
+                            : "คลิกที่รูปเพื่อเปิดดูเต็ม"}
+                        </div>
+
+                        {!avatarFile && avatarUrlCurrent ? (
+                          <a
+                            href={avatarUrlCurrent}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-1 inline-block text-xs font-semibold text-blue-700 underline decoration-blue-700/30 underline-offset-4 hover:text-blue-800"
+                          >
+                            เปิดรูปในแท็บใหม่
+                          </a>
+                        ) : null}
+                      </div>
+
+                      {avatarFile || avatarRemove ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // ยกเลิกการเปลี่ยนแปลง avatar
+                            setAvatarFile(null);
+                            setAvatarRemove(false);
+                            setAvatarErr("");
+                          }}
+                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          ยกเลิก
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-6 text-center text-xs text-slate-500">
+                      ไม่มีรูปโปรไฟล์
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Info */}
               <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="text-xs font-semibold text-slate-600">
                   Quick Info
                 </div>
-
                 <div className="mt-2 space-y-1 text-sm text-slate-700">
                   <div>
                     <span className="text-slate-500">Email:</span>{" "}
@@ -660,39 +885,6 @@ export default function ReviewEditClient({ id }) {
                   <div>
                     <span className="text-slate-500">Status:</span>{" "}
                     <span className="font-medium">{item.status || "-"}</span>
-                  </div>
-
-                  {/* ✅ Avatar preview + click to open lightbox */}
-                  <div className="pt-2">
-                    {avatarUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => setLightboxUrl(avatarUrl)}
-                        className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left hover:bg-slate-100"
-                        title="คลิกเพื่อดูรูปเต็ม"
-                      >
-                        <img
-                          src={avatarUrl}
-                          alt="avatar"
-                          className="h-16 w-16 rounded-2xl object-cover ring-1 ring-slate-200"
-                        />
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-slate-900">
-                            รูปโปรไฟล์ (avatar)
-                          </div>
-                          <div className="mt-0.5 text-xs text-slate-500">
-                            คลิกเพื่อดูรูปเต็ม • กด ESC เพื่อปิด
-                          </div>
-                          <div className="mt-1 text-xs text-blue-600 underline">
-                            เปิดรูปในแท็บใหม่
-                          </div>
-                        </div>
-                      </button>
-                    ) : (
-                      <div className="text-xs text-slate-400">
-                        ไม่มีรูปโปรไฟล์
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
