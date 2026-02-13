@@ -151,7 +151,7 @@ export default async function HomePage() {
       </section> */}
 
       {/* Testimonials */}
-      <section className="w-full bg-white pt-20 pb-20 border-t border-slate-200/0">
+      {/* <section className="w-full bg-white pt-20 pb-20 border-t border-slate-200/0">
         <div className="mx-auto max-w-6xl px-6">
           <div className="text-center">
             <div className="text-xs font-semibold tracking-[0.25em] text-blue-600">
@@ -163,10 +163,10 @@ export default async function HomePage() {
             <p className="mt-4 text-slate-600">
               ประสบการณ์จริงจากผู้เรียนที่ประสบความสำเร็จ
             </p>
-          </div>
+          </div> */}
 
           {/* ✅ เปลี่ยนจาก grid static เป็น carousel */}
-          <TestimonialCarouselClient items={reviews} />
+          {/* <TestimonialCarouselClient items={reviews} />
 
           <div className="mt-14 flex justify-center">
             <Link
@@ -183,7 +183,7 @@ export default async function HomePage() {
             </Link>
           </div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 }
