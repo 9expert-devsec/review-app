@@ -2,45 +2,54 @@ import mongoose from "mongoose";
 
 const ReviewSchema = new mongoose.Schema(
   {
-    // ผู้รีวิว
-    fullName: { type: String, required: true, trim: true },
-    email: { type: String, required: true, trim: true },
-    company: { type: String, default: "", trim: true },
-    jobTitle: { type: String, default: "", trim: true },
-
-    // หลักสูตร + คะแนน
     courseId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Course",
-      required: true,
       index: true,
     },
-    courseName: { type: String, default: "", trim: true }, // snapshot ตอนส่ง
+    courseName: { type: String, default: "", trim: true, index: true },
+
+    reviewerName: { type: String, default: "", trim: true, index: true },
+    reviewerEmail: { type: String, default: "", trim: true },
+    reviewerEmailLower: { type: String, default: "", trim: true, index: true },
+    reviewerCompany: { type: String, default: "", trim: true },
+    reviewerRole: { type: String, default: "", trim: true },
+
     rating: { type: Number, required: true, min: 1, max: 5, index: true },
 
-    // เนื้อหา
-    title: { type: String, required: true, trim: true },
-    body: { type: String, required: true, trim: true },
+    headline: { type: String, default: "", trim: true, index: true },
+    comment: { type: String, default: "", trim: true },
 
-    // รูปโปรไฟล์ (Cloudinary)
-    avatarUrl: { type: String, default: "", trim: true },
-    avatarPublicId: { type: String, default: "", trim: true },
+    avatarUrl: { type: String, default: "" },
+    avatarPublicId: { type: String, default: "" }, // เผื่ออนาคตลบ Cloudinary
 
-    // consent
-    consent: { type: Boolean, default: false, index: true },
+    consentAccepted: { type: Boolean, default: false },
+    consentAcceptedAt: { type: Date, default: null },
+    consentVersion: { type: String, default: "v1" },
 
-    // สถานะสำหรับแอดมิน
+    // ✅ Moderation
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
       index: true,
     },
-    isFeatured: { type: Boolean, default: false, index: true },
-    isPublished: { type: Boolean, default: false, index: true },
-    publishedAt: { type: Date, default: null, index: true },
+    statusUpdatedAt: { type: Date, default: null },
+    approvedAt: { type: Date, default: null },
+    rejectedAt: { type: Date, default: null },
+    rejectReason: { type: String, default: "", trim: true },
+    moderatedBy: { type: String, default: "", trim: true }, // เช่น admin email
+    displayOrder: { type: Number, default: 9999, index: true },
+
+    // ✅ Public visibility
+    isActive: { type: Boolean, default: false, index: true },
+
+    source: { type: String, default: "public" },
   },
   { timestamps: true },
 );
+
+// ReviewSchema.index({ courseId: 1, createdAt: -1 });
+// ReviewSchema.index({ status: 1, isActive: 1, createdAt: -1 });
 
 export default mongoose.models.Review || mongoose.model("Review", ReviewSchema);

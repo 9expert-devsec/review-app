@@ -1,20 +1,43 @@
+import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-import { verifyAdminToken } from "@/lib/adminJwt.server";
+
+function clean(x) {
+  return String(x || "").trim();
+}
+
+function getSecret() {
+  const s = clean(process.env.ADMIN_JWT_SECRET);
+  if (!s) {
+    const err = new Error("Missing ADMIN_JWT_SECRET");
+    err.status = 500;
+    throw err;
+  }
+  return s;
+}
+
+export function signAdminToken(payload, expiresIn = "8h") {
+  return jwt.sign(payload, getSecret(), { expiresIn });
+}
+
+export function verifyAdminToken(token) {
+  return jwt.verify(token, getSecret());
+}
 
 export async function requireAdmin() {
-  // ✅ Next 16: cookies() ต้อง await
-  const cookieStore = await cookies();
-  const token = cookieStore.get("admin_token")?.value || "";
-
+  const jar = await cookies();
+  const token = clean(jar.get("admin_token")?.value);
   if (!token) {
-    throw new Error("Unauthorized");
+    const err = new Error("UNAUTHORIZED");
+    err.status = 401;
+    throw err;
   }
 
-  const payload = await verifyAdminToken(token).catch(() => null);
-
-  if (!payload || payload.role !== "admin") {
-    throw new Error("Unauthorized");
+  try {
+    const decoded = verifyAdminToken(token);
+    return decoded;
+  } catch {
+    const err = new Error("UNAUTHORIZED");
+    err.status = 401;
+    throw err;
   }
-
-  return payload;
 }

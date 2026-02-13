@@ -210,6 +210,33 @@ export default function WriteReviewClient() {
     return true;
   }, [submitting, fullName, email, courseId, rating, title, body, consent]);
 
+  async function uploadAvatar(file) {
+    const fd = new FormData();
+    fd.append("file", file);
+
+    const res = await fetch("/api/upload/review-avatar", {
+      method: "POST",
+      body: fd,
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok) throw new Error(data?.error || "Upload failed");
+
+    return data; // { ok:true, url, publicId }
+  }
+
+  async function submitReview(payload) {
+    const res = await fetch("/api/public/reviews", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j?.ok) throw new Error(j?.error || "Submit failed");
+    return j;
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
     setErr("");
@@ -218,25 +245,29 @@ export default function WriteReviewClient() {
     try {
       setSubmitting(true);
 
-      // NOTE: ตอนนี้ส่งเฉพาะ data (ยังไม่ส่งรูป)
-      const res = await fetch("/api/public/reviews", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          fullName,
-          email,
-          company,
-          jobTitle,
-          courseId,
-          rating,
-          title,
-          body,
-          consent,
-        }),
-      });
+      // 1) อัปโหลดรูปก่อน (ถ้ามี)
+      let avatarUrl = "";
+      let avatarPublicId = "";
+      if (avatarFile) {
+        const up = await uploadAvatar(avatarFile);
+        avatarUrl = up.url || "";
+        avatarPublicId = up.publicId || "";
+      }
 
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j?.ok) throw new Error(j?.error || "Submit failed");
+      // 2) ส่งรีวิว (แนบ url/publicId ไปด้วย)
+      await submitReview({
+        fullName,
+        email,
+        company,
+        jobTitle,
+        courseId,
+        rating,
+        title,
+        body,
+        consent,
+        avatarUrl,
+        avatarPublicId,
+      });
 
       router.push("/thanks");
     } catch (e2) {
@@ -345,7 +376,7 @@ export default function WriteReviewClient() {
                   {loadingCourses ? "กำลังโหลด..." : "-- เลือกหลักสูตร --"}
                 </option>
                 {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <option key={c.id || c._id} value={c.id || c._id}>
                     {c.name}
                   </option>
                 ))}
@@ -493,12 +524,12 @@ export default function WriteReviewClient() {
 
                 <div className="flex flex-col">
                   <div className="flex flex-row gap-3 items-center">
-                  <div className="mt-1 flex shrink-0 items-center justify-center  text-blue-600 ">
-                    <Shield className="h-5 w-5" />
-                  </div>
-                  <div className="text-base font-semibold text-slate-900">
-                    การให้ความยินยอมในการใช้ข้อมูล
-                  </div>
+                    <div className="mt-1 flex shrink-0 items-center justify-center  text-blue-600 ">
+                      <Shield className="h-5 w-5" />
+                    </div>
+                    <div className="text-base font-semibold text-slate-900">
+                      การให้ความยินยอมในการใช้ข้อมูล
+                    </div>
                   </div>
 
                   {/* ส่วน Checkbox - ใช้ <label> เพื่อให้คลิกที่ตัวหนังสือแล้วติ๊กถูกได้เลย */}

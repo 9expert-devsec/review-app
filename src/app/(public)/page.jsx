@@ -1,5 +1,6 @@
 // src/app/(public)/page.jsx
 import Link from "next/link";
+import { headers } from "next/headers";
 import {
   ArrowDown,
   ArrowRight,
@@ -8,9 +9,17 @@ import {
   Users,
   Activity,
 } from "lucide-react";
+import TestimonialCarouselClient from "./TestimonialCarouselClient";
 
 function cx(...a) {
   return a.filter(Boolean).join(" ");
+}
+
+async function getBaseUrl() {
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") || "http";
+  const host = h.get("x-forwarded-host") || h.get("host");
+  return `${proto}://${host}`;
 }
 
 function FeatureCard({ icon, title, desc }) {
@@ -32,38 +41,20 @@ function FeatureCard({ icon, title, desc }) {
   );
 }
 
-function StarsRow() {
-  return (
-    <div className="flex gap-1 text-amber-400">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star key={i} className="h-4 w-4 fill-current" />
-      ))}
-    </div>
-  );
-}
+export default async function HomePage() {
+  // ✅ ดึงรีวิว active ทั้งหมด (ตาม displayOrder)
+  let reviews = [];
+  try {
+    const baseUrl = await getBaseUrl();
+    const r = await fetch(`${baseUrl}/api/public/reviews?limit=50`, {
+      cache: "no-store",
+    });
+    const j = await r.json().catch(() => ({}));
+    if (j?.ok) reviews = j.items || [];
+  } catch {
+    reviews = [];
+  }
 
-function TestimonialCard({ quote, name, meta, initial }) {
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
-      <StarsRow />
-      <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-800">
-        {quote}
-      </p>
-
-      <div className="mt-6 flex items-center gap-4">
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold bg-gradient-to-br from-blue-600 to-blue-400">
-          {initial}
-        </div>
-        <div>
-          <div className="font-semibold text-[#0D1B2A]">{name}</div>
-          <div className="text-sm text-slate-500">{meta}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function HomePage() {
   return (
     <div className="w-full">
       {/* Hero */}
@@ -94,10 +85,8 @@ export default function HomePage() {
               href="/review"
               className={cx(
                 "inline-flex items-center justify-center gap-3 rounded-2xl px-8 py-4",
-                // ส่วนที่แก้ไข: ใส่ Gradient
                 "bg-gradient-to-r from-blue-700 to-blue-500 text-white font-semibold",
                 "shadow-[0_18px_40px_rgba(37,99,235,0.35)]",
-                // ปรับ hover ให้สว่างขึ้นเล็กน้อยเมื่อเอาเมาส์วาง
                 "hover:brightness-110 active:scale-[0.99] transition",
               )}
             >
@@ -106,7 +95,6 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* ✅ ปุ่มเลื่อนลง: กดได้ + เด้งเบาๆ */}
           <div className="mt-10 flex justify-center">
             <a
               href="#why"
@@ -119,7 +107,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Why share (✅ พื้นหลังเต็มจอ) */}
+      {/* Why share */}
       <section
         id="why"
         className="w-full bg-[#f7f9fc] py-20 border-t border-slate-200/0"
@@ -177,42 +165,16 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="mt-12 grid gap-6 lg:grid-cols-3">
-            <TestimonialCard
-              initial="ส"
-              name="สมศักดิ์ วิชัยรัตน์"
-              meta="Power BI for Business Analytics • ธนาคารกสิกรไทย"
-              quote={`"หลักสูตรนี้เปลี่ยนวิธีการทำงานของผมไปเลยครับ
-จากที่ต้องทำรายงานด้วย Excel เป็นวันๆ ตอนนี้
-สร้าง Dashboard ที่อัพเดทอัตโนมัติได้ภายในไม่กี่ชั่วโมง ขอบคุณ 9Expert ครับ!"`}
-            />
-            <TestimonialCard
-              initial="W"
-              name="พิมพ์ลดา ศรีสุวรรณ"
-              meta="Microsoft 365 Copilot • SCG"
-              quote={`"เรียนแล้วนำไปใช้ได้จริงทันทีเลยค่ะ อาจารย์สอนเข้าใจง่าย
-มีตัวอย่างจาก Case จริงๆ ที่เจอในการทำงาน ทำให้สามารถประยุกต์ใช้ AI
-ในงานประจำวันได้อย่างมีประสิทธิภาพ"`}
-            />
-            <TestimonialCard
-              initial="ณ"
-              name="ณัฐพงศ์ จันทเกษม"
-              meta="Power Automate Essentials • PTT Digital"
-              quote={`"ประทับใจมากครับ สามารถลดเวลาทำงานซ้ำๆ ได้กว่า 40% เลย
-การเรียนที่ 9Expert ให้ทั้งความรู้และแรงบันดาลใจในการพัฒนาตัวเอง แนะนำอย่างยิ่งครับ"`}
-            />
-          </div>
+          {/* ✅ เปลี่ยนจาก grid static เป็น carousel */}
+          <TestimonialCarouselClient items={reviews} />
 
-          {/* ✅ CTA ใต้ testimonials: แบบใหญ่ 2 บรรทัดเหมือนตัวอย่าง */}
           <div className="mt-14 flex justify-center">
             <Link
               href="/review"
               className={cx(
                 "inline-flex items-center justify-center gap-3 rounded-2xl px-8 py-4",
-                // ส่วนที่แก้ไข: ใส่ Gradient
                 "bg-gradient-to-r from-blue-700 to-blue-500 text-white font-semibold",
                 "shadow-[0_18px_40px_rgba(37,99,235,0.35)]",
-                // ปรับ hover ให้สว่างขึ้นเล็กน้อยเมื่อเอาเมาส์วาง
                 "hover:brightness-110 active:scale-[0.99] transition",
               )}
             >

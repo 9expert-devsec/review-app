@@ -10,17 +10,14 @@ export async function GET() {
     await dbConnect();
 
     const items = await Course.find({ isActive: true })
+      .select("name sortOrder")
       .sort({ sortOrder: 1, name: 1 })
-      .select({ name: 1 })
       .lean();
 
-    return NextResponse.json({
-      ok: true,
-      items: items.map((x) => ({ id: String(x._id), name: x.name })),
-    });
+    return NextResponse.json({ ok: true, items });
   } catch (e) {
     return NextResponse.json(
-      { ok: false, error: "Failed to load courses" },
+      { ok: false, error: String(e?.message || "Load failed") },
       { status: 500 },
     );
   }

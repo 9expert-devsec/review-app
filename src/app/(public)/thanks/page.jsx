@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export default function ThanksPage() {
   return (
-    <div className="mx-auto max-w-3xl px-6 py-24 text-center">
+    <div className="mx-auto max-w-3xl px-6 py-24 text-center flex flex-col min-h-[calc(100dvh-350px)]">
       <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-blue-700">
         <CheckCircle2 className="h-8 w-8" />
       </div>

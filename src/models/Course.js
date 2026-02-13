@@ -11,7 +11,7 @@ const CourseSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-CourseSchema.index({ sourceId: 1 }, { unique: false });
-CourseSchema.index({ name: 1 }, { unique: false });
+// CourseSchema.index({ sourceId: 1 }, { unique: false });
+// CourseSchema.index({ name: 1 }, { unique: false });
 
 export default mongoose.models.Course || mongoose.model("Course", CourseSchema);
