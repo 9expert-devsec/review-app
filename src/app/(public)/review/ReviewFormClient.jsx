@@ -91,13 +91,10 @@ function TermsModal({ open, onClose }) {
       role="dialog"
       aria-modal="true"
     >
-      {/* overlay */}
       <div
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
         onClick={onClose}
       />
-
-      {/* modal */}
       <div className="relative w-full max-w-3xl rounded-3xl bg-white shadow-[0_30px_80px_rgba(15,23,42,0.30)]">
         <div className="px-8 pt-7">
           <div className="text-lg font-extrabold text-slate-900">
@@ -128,6 +125,63 @@ function TermsModal({ open, onClose }) {
   );
 }
 
+/* ---------------- Image compress (client) ---------------- */
+async function compressImageFile(
+  file,
+  {
+    maxSize = 1024,
+    quality = 0.82,
+    mimeType = "image/webp", // "image/jpeg" ก็ได้
+  } = {},
+) {
+  if (!file || !file.type?.startsWith("image/")) return file;
+
+  const srcUrl = URL.createObjectURL(file);
+
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = srcUrl;
+    });
+
+    const w = img.naturalWidth || img.width || 0;
+    const h = img.naturalHeight || img.height || 0;
+    if (!w || !h) return file;
+
+    const scale = Math.min(1, maxSize / Math.max(w, h));
+    const tw = Math.max(1, Math.round(w * scale));
+    const th = Math.max(1, Math.round(h * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = tw;
+    canvas.height = th;
+
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) return file;
+
+    ctx.drawImage(img, 0, 0, tw, th);
+
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, mimeType, quality),
+    );
+    if (!blob) return file;
+
+    const ext =
+      mimeType === "image/png"
+        ? "png"
+        : mimeType === "image/jpeg"
+          ? "jpg"
+          : "webp";
+
+    const name = (file.name || "avatar").replace(/\.[a-z0-9]+$/i, "");
+    return new File([blob], `${name}.${ext}`, { type: mimeType });
+  } finally {
+    URL.revokeObjectURL(srcUrl);
+  }
+}
+
 export default function WriteReviewClient() {
   const router = useRouter();
 
@@ -150,7 +204,7 @@ export default function WriteReviewClient() {
   const [consent, setConsent] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
-  // avatar upload UI (ยังไม่อัปโหลดขึ้น Cloudinary ในเคสนี้)
+  // avatar upload UI
   const fileRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
@@ -191,19 +245,47 @@ export default function WriteReviewClient() {
     return () => URL.revokeObjectURL(url);
   }, [avatarFile]);
 
-  function pickImage(file) {
+  function resetFileInput() {
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function pickImage(file) {
     if (!file) return;
+
     if (!file.type?.startsWith("image/")) {
       setErr("ไฟล์รูปภาพไม่ถูกต้อง (ต้องเป็นไฟล์รูปภาพเท่านั้น)");
+      resetFileInput();
       return;
     }
+
     const maxMB = 5;
-    if (file.size > maxMB * 1024 * 1024) {
-      setErr(`ไฟล์ใหญ่เกินไป (เกิน ${maxMB}MB)`);
-      return;
+    const maxBytes = maxMB * 1024 * 1024;
+
+    try {
+      setErr("");
+
+      // ถ้าไฟล์ใหญ่เกิน 5MB -> บีบอัดอัตโนมัติ
+      let chosen = file;
+      if (file.size > maxBytes) {
+        chosen = await compressImageFile(file, {
+          maxSize: 1024,
+          quality: 0.82,
+          mimeType: "image/webp",
+        });
+
+        if (chosen.size > maxBytes) {
+          setErr(`ไฟล์ใหญ่เกินไป (เกิน ${maxMB}MB)`);
+          resetFileInput();
+          return;
+        }
+      }
+
+      setAvatarFile(chosen);
+      resetFileInput(); // เพื่อให้เลือกไฟล์เดิมซ้ำได้
+    } catch {
+      setErr("ไม่สามารถประมวลผลรูปภาพได้ กรุณาลองไฟล์อื่น");
+      resetFileInput();
     }
-    setErr("");
-    setAvatarFile(file);
   }
 
   const canSubmit = useMemo(() => {
@@ -262,7 +344,7 @@ export default function WriteReviewClient() {
         avatarPublicId = up.publicId || "";
       }
 
-      // 2) ส่งรีวิว (แนบ url/publicId ไปด้วย)
+      // 2) ส่งรีวิว
       await submitReview({
         fullName,
         email,
@@ -384,7 +466,7 @@ export default function WriteReviewClient() {
                   {loadingCourses ? "กำลังโหลด..." : "-- เลือกหลักสูตร --"}
                 </option>
                 {[...courses]
-                  .sort((a, b) => a.name.localeCompare(b.name, "th")) // รองรับทั้งภาษาไทยและอังกฤษ
+                  .sort((a, b) => a.name.localeCompare(b.name, "th"))
                   .map((c) => (
                     <option key={c.id || c._id} value={c.id || c._id}>
                       {c.name}
@@ -445,8 +527,8 @@ export default function WriteReviewClient() {
 
               <div
                 className={cx(
-                  "mt-3 rounded-3xl border-2 border-dashed p-6 transition cursor-pointer", // เพิ่ม cursor-pointer
-                  "hover:border-blue-500 hover:bg-blue-50/30", // เพิ่มเอฟเฟกต์ Hover
+                  "mt-3 rounded-3xl border-2 border-dashed p-6 transition cursor-pointer",
+                  "hover:border-blue-500 hover:bg-blue-50/30",
                   dragOver
                     ? "border-blue-300 bg-blue-50/60"
                     : "border-slate-200 bg-slate-50/60",
@@ -490,6 +572,9 @@ export default function WriteReviewClient() {
                       <div className="mt-1 text-xs text-slate-500">
                         หากท่านอัปโหลดรูปภาพ
                         ท่านยินยอมให้เราใช้รูปภาพเพื่อประกอบคำคัดย่อของท่าน
+                        <div className="mt-1 text-[11px] text-slate-400">
+                          * ระบบจะบีบอัดรูปอัตโนมัติหากไฟล์ใหญ่เกิน 5MB
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -516,6 +601,7 @@ export default function WriteReviewClient() {
                       onClick={(e) => {
                         e.stopPropagation();
                         setAvatarFile(null);
+                        resetFileInput();
                       }}
                       className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white ring-1 ring-slate-200 hover:bg-slate-50"
                       aria-label="remove avatar"
@@ -527,11 +613,9 @@ export default function WriteReviewClient() {
               </div>
             </div>
 
-            {/* Consent (shield + checkbox before sentence + modal link) */}
+            {/* Consent */}
             <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-5">
               <div className="flex items-start gap-4">
-                {/* ไอคอนโล่ - ปรับ mt เล็กน้อยให้ตรงกลางบรรทัดแรกของหัวข้อ */}
-
                 <div className="flex flex-col">
                   <div className="flex flex-row gap-3 items-center">
                     <div className="mt-1 flex shrink-0 items-center justify-center  text-blue-600 ">
@@ -542,7 +626,6 @@ export default function WriteReviewClient() {
                     </div>
                   </div>
 
-                  {/* ส่วน Checkbox - ใช้ <label> เพื่อให้คลิกที่ตัวหนังสือแล้วติ๊กถูกได้เลย */}
                   <label className="group mt-3 flex cursor-pointer items-start gap-3">
                     <input
                       type="checkbox"
@@ -556,7 +639,7 @@ export default function WriteReviewClient() {
                       <button
                         type="button"
                         onClick={(e) => {
-                          e.preventDefault(); // กันไม่ให้ไปติ๊ก Checkbox ซ้ำตอนกดปุ่ม
+                          e.preventDefault();
                           setShowTerms(true);
                         }}
                         className="cursor-pointer font-semibold text-blue-700 underline decoration-blue-700/30 underline-offset-4 transition hover:text-blue-800 hover:decoration-blue-800"
