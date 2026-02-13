@@ -383,11 +383,13 @@ export default function WriteReviewClient() {
                 <option value="">
                   {loadingCourses ? "กำลังโหลด..." : "-- เลือกหลักสูตร --"}
                 </option>
-                {courses.map((c) => (
-                  <option key={c.id || c._id} value={c.id || c._id}>
-                    {c.name}
-                  </option>
-                ))}
+                {[...courses]
+                  .sort((a, b) => a.name.localeCompare(b.name, "th")) // รองรับทั้งภาษาไทยและอังกฤษ
+                  .map((c) => (
+                    <option key={c.id || c._id} value={c.id || c._id}>
+                      {c.name}
+                    </option>
+                  ))}
               </select>
             </div>
 
