@@ -48,7 +48,7 @@ function Avatar({ name, url }) {
 function TestimonialCard({ item }) {
   const metaParts = [item.courseName, item.reviewerCompany].filter(Boolean);
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+    <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_6px_12px_rgba(15,23,42,0.06)]">
       <StarsRow rating={item.rating} />
       <div className="mt-4 text-sm leading-7 text-slate-800">
         <div className="font-semibold text-slate-900 line-clamp-2">
@@ -207,7 +207,7 @@ export default function TestimonialCarouselClient({ items = [] }) {
       {/* Viewport */}
       <div className="overflow-hidden">
         <div
-          className="flex"
+          className="flex py-10"
           onTransitionEnd={handleTransitionEnd}
           style={{
             transform: `translateX(-${shiftPct}%)`,
