@@ -1,4 +1,6 @@
+// src/app/api/public/reviews/route.js
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import dbConnect from "@/lib/mongoose";
 import Review from "@/models/Review";
 import Course from "@/models/Course";
@@ -14,7 +16,11 @@ function toEmailLower(x) {
   return clean(x).toLowerCase();
 }
 
-// หน้าแรกดึงรีวิวที่ “เปิด Active” แล้วเท่านั้น
+function isValidId(id) {
+  return mongoose.isValidObjectId(id);
+}
+
+// หน้าแรกดึงรีวิวที่ “เปิด Active” + “approved” เท่านั้น
 export async function GET(req) {
   try {
     await dbConnect();
@@ -26,7 +32,7 @@ export async function GET(req) {
     );
 
     const items = await Review.find({ isActive: true })
-      .sort({ displayOrder: 1, createdAt: -1 }) // ✅ เรียงตามลำดับก่อน แล้วค่อย createdAt
+      .sort({ pinnedAt: -1, createdAt: -1 }) // ✅ Active ที่กดล่าสุดขึ้นก่อน
       .limit(limit)
       .select({
         reviewerName: 1,
@@ -34,17 +40,27 @@ export async function GET(req) {
         reviewerRole: 1,
         courseName: 1,
         rating: 1,
-        headline: 1,
+
+        body: 1,
+        pinnedAt: 1,
+
+        // legacy กันข้อมูลเก่า
         comment: 1,
+        headline: 1,
+
         avatarUrl: 1,
-        displayOrder: 1,
         createdAt: 1,
       })
       .lean();
 
     return NextResponse.json({
       ok: true,
-      items: items.map((x) => ({ ...x, id: String(x._id) })),
+      items: items.map((x) => ({
+        ...x,
+        id: String(x._id),
+        // ✅ ส่ง reviewText กลางให้หน้าเว็บใช้ได้ง่าย
+        reviewText: clean(x.body || x.comment || ""),
+      })),
     });
   } catch (e) {
     return NextResponse.json(
@@ -67,8 +83,8 @@ export async function POST(req) {
     const courseId = clean(body.courseId);
     const rating = Number(body.rating);
 
-    const headline = clean(body.headline || body.title);
-    const comment = clean(body.comment || body.body);
+    // ✅ ใหม่: ไม่ใช้ headline/title แล้ว
+    const reviewText = clean(body.body || body.comment);
 
     // ✅ FIX: ต้องประกาศให้ครบ (กัน ReferenceError)
     const avatarUrl = clean(body.avatarUrl);
@@ -76,9 +92,16 @@ export async function POST(req) {
 
     const consentAccepted = Boolean(body.consentAccepted ?? body.consent);
 
-    if (!reviewerName || !reviewerEmail || !courseId || !headline || !comment) {
+    if (!reviewerName || !reviewerEmail || !courseId || !reviewText) {
       return NextResponse.json(
         { ok: false, error: "Missing required fields" },
+        { status: 400 },
+      );
+    }
+
+    if (!isValidId(courseId)) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid courseId" },
         { status: 400 },
       );
     }
@@ -107,7 +130,7 @@ export async function POST(req) {
 
     const doc = await Review.create({
       courseId,
-      courseName: course.name,
+      courseName: clean(course.name),
 
       reviewerName,
       reviewerEmail,
@@ -116,10 +139,15 @@ export async function POST(req) {
       reviewerRole,
 
       rating,
-      headline,
-      comment,
 
-      // ✅ บันทึกรูปให้ครบ 2 ฟิลด์
+      // ✅ ใหม่: เก็บไว้ที่ body เป็นหลัก
+      body: reviewText,
+
+      // legacy: กันของเก่าพัง (admin list/search/export ยังอ่านได้)
+      comment: reviewText,
+      headline: "",
+
+      // รูป
       avatarUrl,
       avatarPublicId,
 
@@ -128,6 +156,7 @@ export async function POST(req) {
       consentVersion: "v1",
 
       isActive: false,
+      pinnedAt: null,
       source: "public",
       status: "pending",
     });

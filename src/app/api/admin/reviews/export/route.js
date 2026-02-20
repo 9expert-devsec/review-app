@@ -1,3 +1,4 @@
+// src/app/api/admin/reviews/export/route.js
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
 import Review from "@/models/Review";
@@ -23,6 +24,14 @@ function formatBKK(d) {
   return dt.toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
 }
 
+function parseBkkRange(from, to) {
+  // input: YYYY-MM-DD (BKK)
+  const out = {};
+  if (from) out.$gte = new Date(`${from}T00:00:00.000+07:00`);
+  if (to) out.$lte = new Date(`${to}T23:59:59.999+07:00`);
+  return Object.keys(out).length ? out : null;
+}
+
 export async function GET(req) {
   try {
     await requireAdmin();
@@ -39,13 +48,12 @@ export async function GET(req) {
     if (active === "1") where.isActive = true;
     if (active === "0") where.isActive = false;
 
-    if (from || to) {
-      where.createdAt = {};
-      if (from) where.createdAt.$gte = new Date(`${from}T00:00:00.000Z`);
-      if (to) where.createdAt.$lte = new Date(`${to}T23:59:59.999Z`);
-    }
+    const range = parseBkkRange(from, to);
+    if (range) where.createdAt = range;
 
-    const items = await Review.find(where).sort({ createdAt: -1 }).lean();
+    const items = await Review.find(where)
+      .sort({ isActive: -1, pinnedAt: -1, createdAt: -1 })
+      .lean();
 
     const header = [
       "createdAt(BKK)",
@@ -54,7 +62,7 @@ export async function GET(req) {
       "reviewerName",
       "reviewerCompany",
       "reviewerRole",
-      "comment",
+      "body",
       "isActive",
     ];
 
@@ -65,7 +73,7 @@ export async function GET(req) {
       it.reviewerName || "",
       it.reviewerCompany || "",
       it.reviewerRole || "",
-      it.comment || "",
+      (it.body || it.comment || "").trim(),
       it.isActive ? "1" : "0",
     ]);
 

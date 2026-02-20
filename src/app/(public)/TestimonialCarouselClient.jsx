@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import {
+  cloudinaryAvatarThumb,
+  cloudinaryAvatarFull,
+} from "@/lib/cloudinaryUrl.client";
 
 function cx(...a) {
   return a.filter(Boolean).join(" ");
@@ -29,28 +33,60 @@ function Avatar({ name, url }) {
     String(name || "?")
       .trim()
       .slice(0, 1) || "?";
+
   if (url) {
+    const thumb = cloudinaryAvatarThumb(url, 160); // จะใช้ 96 ก็ได้ แต่ 160 จะคมขึ้น (ยังแสดง 40px เหมือนเดิม)
     return (
-      <img
-        src={url}
-        alt={name || "avatar"}
-        className="h-10 w-10 rounded-lg object-cover ring-1 ring-slate-200"
-      />
+      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full ring-1 ring-slate-200 bg-white">
+        <img
+          src={thumb}
+          alt={name || "avatar"}
+          className="h-full w-full object-cover object-top"
+          draggable={false}
+        />
+      </div>
     );
   }
+
   return (
-    <div className="h-10 w-10 rounded-lg flex items-center justify-center text-white font-bold bg-gradient-to-br from-blue-600 to-blue-400">
+    <div className="h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-br from-blue-600 to-blue-400">
       {initial}
     </div>
   );
 }
 
+function pickReviewText(item) {
+  return String(item?.reviewText || item?.body || item?.comment || "")
+    .trim()
+    .replace(/\s+\n/g, "\n");
+}
+
+function cloudThumb(url, size = 96) {
+  const s = String(url || "");
+  const marker = "/image/upload/";
+  const i = s.indexOf(marker);
+  if (i === -1) return s;
+
+  // ใช้ g_auto เพื่อโฟกัสจุดสำคัญ (มักเป็นหน้า) แบบปลอดภัย
+  // ถ้าคุณอยาก “เน้นหน้า” แบบชัดขึ้น ลองเปลี่ยน g_auto -> g_face ได้
+  const t = `c_fill,g_auto,w_${size},h_${size},q_auto,f_auto`;
+  return s.slice(0, i + marker.length) + t + "/" + s.slice(i + marker.length);
+}
+
 function TestimonialCard({ item }) {
   const metaParts = [item.courseName, item.reviewerCompany].filter(Boolean);
+  const metaText = metaParts.join(" • ");
+
   return (
+<<<<<<< Updated upstream
     <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+=======
+    <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_6px_12px_rgba(15,23,42,0.06)] h-full flex flex-col">
+>>>>>>> Stashed changes
       <StarsRow rating={item.rating} />
-      <div className="mt-4 text-sm leading-7 text-slate-800">
+
+      {/* ทำส่วนข้อความให้เป็นตัวดันความสูง */}
+      <div className="mt-4 text-sm leading-7 text-slate-800 flex-1">
         <div className="font-semibold text-slate-900 line-clamp-2">
           {item.headline || ""}
         </div>
@@ -59,15 +95,40 @@ function TestimonialCard({ item }) {
         </div>
       </div>
 
+      {/* แถบโปรไฟล์อยู่ล่างสุดเสมอ */}
+      {/* แถบโปรไฟล์อยู่ล่างสุดเสมอ */}
       <div className="mt-6 flex items-center gap-4">
         <Avatar name={item.reviewerName} url={item.avatarUrl} />
-        <div className="min-w-0">
+
+        <div className="min-w-0 flex-1">
+          {/* ชื่อ */}
           <div className="font-semibold text-[#0D1B2A] line-clamp-1">
             {item.reviewerName || "-"}
           </div>
-          <div className="text-sm text-slate-500 line-clamp-1">
-            {metaParts.join(" • ")}
-          </div>
+
+          {/* role + company (บรรทัดเดียว) */}
+{(() => {
+  const role = String(item.reviewerRole || item.jobTitle || "").trim();
+  const company = String(item.reviewerCompany || item.company || "").trim();
+  const line = [role, company].filter(Boolean).join(" • ");
+  if (!line) return null;
+
+  return (
+    <div className="mt-0.5 text-xs text-slate-500 line-clamp-1" title={line}>
+      {line}
+    </div>
+  );
+})()}
+
+          {/* 3) หลักสูตร (ถ้ามี) */}
+          {String(item.courseName || "").trim() ? (
+            <div
+              className="mt-0.5 text-sm text-slate-500 line-clamp-1"
+              title={String(item.courseName || "").trim()}
+            >
+              {String(item.courseName || "").trim()}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -77,37 +138,38 @@ function TestimonialCard({ item }) {
 export default function TestimonialCarouselClient({ items = [] }) {
   const [hovered, setHovered] = useState(false);
   const [perView, setPerView] = useState(3);
-  const [index, setIndex] = useState(0); // เราจะเริ่มที่ index 0 ของรายการที่ clone มา
+
+  // ✅ perView จริง = ไม่เกินจำนวน items (กันกรณี items น้อย)
+  const realPerView = Math.max(1, Math.min(perView, items.length || 1));
+  const canLoop = items.length > realPerView;
+
+  const [index, setIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
   const transitionSpeed = 500; // ms
 
-  // 1. สร้าง List ใหม่ที่มีการ Clone หัว-ท้ายเพื่อทำ Infinite Loop
+  // 1) สร้าง list สำหรับ infinite loop เฉพาะตอนที่ canLoop
   const extendedList = useMemo(() => {
-    if (items.length === 0) return [];
-    // เอาตัวท้ายมาต่อหน้า และเอาตัวหน้ามาต่อท้าย
-    // [Last 3] + [Original List] + [First 3]
-    const before = items.slice(-perView);
-    const after = items.slice(0, perView);
+    if (!items.length) return [];
+    if (!canLoop) return items;
+
+    const before = items.slice(-realPerView);
+    const after = items.slice(0, realPerView);
     return [...before, ...items, ...after];
-  }, [items, perView]);
+  }, [items, canLoop, realPerView]);
 
-  // ตั้งค่า index เริ่มต้นให้อยู่ที่ "ตัวแรกของข้อมูลจริง" (ไม่ใช่ตัวที่ clone มาไว้ข้างหน้า)
+  // 2) ตั้ง index เริ่มต้น
   useEffect(() => {
-    setIndex(perView);
-  }, [perView]);
-
-  useEffect(() => {
-    if (!isTransitioning) {
-      // ต้องรอให้ State index เปลี่ยนเสร็จก่อน (ตำแหน่งวาร์ป)
-      // แล้วค่อยเปิด Transition กลับมาสำหรับการเลื่อนครั้งถัดไป
-      const timeout = setTimeout(() => {
-        setIsTransitioning(true);
-      }, 20); // ดีเลย์นิดเดียวพอให้ Browser render ทัน
-      return () => clearTimeout(timeout);
+    if (!items.length) return;
+    if (!canLoop) {
+      setIsTransitioning(false);
+      setIndex(0);
+      return;
     }
-  }, [isTransitioning]);
+    setIsTransitioning(true);
+    setIndex(realPerView);
+  }, [items.length, canLoop, realPerView]);
 
-  // 2. Responsive Check
+  // 3) Responsive
   useEffect(() => {
     function calc() {
       const w = window.innerWidth;
@@ -116,52 +178,55 @@ export default function TestimonialCarouselClient({ items = [] }) {
       return 3;
     }
     const onResize = () => {
-      setIsTransitioning(false); // ปิด animation ตอน resize เพื่อความเป๊ะ
+      setIsTransitioning(false);
       setPerView(calc());
     };
+    setPerView(calc());
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // 3. หัวใจของ Infinite Loop: การ "วาร์ป" กลับตำแหน่งจริงแบบไร้รอยต่อ
+  // 4) Infinite loop warp
   const handleTransitionEnd = () => {
-    // ถ้าเลื่อนไปจนถึงกลุ่ม Clone ด้านหลัง (หน้าสุดท้าย)
-    if (index >= extendedList.length - perView) {
-      setIsTransitioning(false); // ปิด animation
-      setIndex(perView); // วาร์ปกลับไปตัวแรกของจริง
-    }
-    // ถ้าเลื่อนถอยหลังจนถึงกลุ่ม Clone ด้านหน้า
-    else if (index <= 0) {
+    if (!canLoop) return;
+
+    if (index >= extendedList.length - realPerView) {
       setIsTransitioning(false);
-      setIndex(extendedList.length - perView * 2);
+      setIndex(realPerView);
+    } else if (index <= 0) {
+      setIsTransitioning(false);
+      setIndex(extendedList.length - realPerView * 2);
     }
   };
 
-  // เปิด Animation กลับมาหลังจากวาร์ปเสร็จ
+  // เปิด transition กลับมาหลัง warp
   useEffect(() => {
+    if (!canLoop) return;
     if (!isTransitioning) {
-      const raf = requestAnimationFrame(() => {
-        setIsTransitioning(true);
-      });
+      const raf = requestAnimationFrame(() => setIsTransitioning(true));
       return () => cancelAnimationFrame(raf);
     }
-  }, [isTransitioning]);
+  }, [isTransitioning, canLoop]);
 
-  // 4. Autoplay
+  // 5) Autoplay
   useEffect(() => {
-    if (hovered || items.length <= perView) return;
+    if (!canLoop) return;
+    if (hovered) return;
     const t = setInterval(() => {
       next();
     }, 3000);
     return () => clearInterval(t);
-  }, [hovered, index, items.length, perView]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hovered, index, canLoop]);
 
   function prev() {
+    if (!canLoop) return;
     if (!isTransitioning) return;
     setIndex((i) => i - 1);
   }
 
   function next() {
+    if (!canLoop) return;
     if (!isTransitioning) return;
     setIndex((i) => i + 1);
   }
@@ -174,8 +239,7 @@ export default function TestimonialCarouselClient({ items = [] }) {
     );
   }
 
-  // คำนวณ % การเลื่อน
-  const shiftPct = (100 / perView) * index;
+  const shiftPct = (100 / realPerView) * index;
 
   return (
     <div
@@ -184,7 +248,7 @@ export default function TestimonialCarouselClient({ items = [] }) {
       onMouseLeave={() => setHovered(false)}
     >
       {/* Arrows */}
-      {items.length > perView && (
+      {canLoop && (
         <>
           <button
             type="button"
@@ -207,34 +271,31 @@ export default function TestimonialCarouselClient({ items = [] }) {
       {/* Viewport */}
       <div className="overflow-hidden">
         <div
+<<<<<<< Updated upstream
           className="flex"
+=======
+          className="flex items-stretch py-10"
+>>>>>>> Stashed changes
           onTransitionEnd={handleTransitionEnd}
           style={{
             transform: `translateX(-${shiftPct}%)`,
-            transition: isTransitioning
-              ? `transform ${transitionSpeed}ms ease-out`
-              : "none",
+            transition:
+              canLoop && isTransitioning
+                ? `transform ${transitionSpeed}ms ease-out`
+                : "none",
           }}
         >
           {extendedList.map((it, i) => (
             <div
-              key={`${it.id || it._id}-${i}`} // ใช้ index ร่วมด้วยกัน key ซ้ำจากการ clone
-              className="shrink-0 px-3"
-              style={{ flexBasis: `${100 / perView}%` }}
+              key={`${it.id || it._id}-${i}`}
+              className="shrink-0 px-3 h-full"
+              style={{ flexBasis: `${100 / realPerView}%` }}
             >
               <TestimonialCard item={it} />
             </div>
           ))}
         </div>
       </div>
-
-      {/* Hint */}
-      {/* {items.length > perView && (
-        <div className="mt-4 text-center text-xs text-slate-400">
-          {hovered ? "หยุดอัตโนมัติ (hover)" : "เลื่อนอัตโนมัติทุก 5 วินาที"} •
-          วนลูปต่อเนื่อง
-        </div>
-      )} */}
     </div>
   );
 }

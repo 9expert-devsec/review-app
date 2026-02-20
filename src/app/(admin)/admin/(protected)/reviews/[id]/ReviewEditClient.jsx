@@ -5,6 +5,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import ImageLightbox from "@/components/ui/ImageLightbox";
+import AvatarCropModal from "@/components/ui/AvatarCropModal";
+import {
+  cloudinaryAvatarThumb,
+  cloudinaryAvatarFull,
+} from "@/lib/cloudinaryUrl.client";
 
 function getAdminBase(pathname) {
   const p = String(pathname || "");
@@ -74,6 +79,152 @@ function Pill({ on, children }) {
   );
 }
 
+function formatBytes(n) {
+  const x = Number(n || 0);
+  if (!Number.isFinite(x) || x <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.min(
+    units.length - 1,
+    Math.floor(Math.log(x) / Math.log(1024)),
+  );
+  const v = x / Math.pow(1024, i);
+  return `${v.toFixed(i === 0 ? 0 : 2)} ${units[i]}`;
+}
+
+async function compressBlobToMaxBytes(blob, maxBytes) {
+  // blob ที่ได้จาก crop เป็น jpeg แล้ว (512x512) ส่วนใหญ่ไม่ใหญ่มาก
+  // แต่เผื่อไว้: ถ้าเกิน maxBytes ให้ลด quality ลง
+  if (blob.size <= maxBytes) return blob;
+
+  const imgUrl = URL.createObjectURL(blob);
+  try {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = imgUrl;
+    await new Promise((res, rej) => {
+      img.onload = () => res();
+      img.onerror = () => rej(new Error("อ่านรูปไม่สำเร็จ"));
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    ctx.drawImage(img, 0, 0, 512, 512);
+
+    let out = blob;
+    for (let q = 0.9; q >= 0.55; q -= 0.05) {
+      const b = await new Promise((res, rej) => {
+        canvas.toBlob(
+          (x) => (x ? res(x) : rej(new Error("แปลงรูปไม่สำเร็จ"))),
+          "image/jpeg",
+          q,
+        );
+      });
+      out = b;
+      if (b.size <= maxBytes) break;
+    }
+    return out;
+  } finally {
+    URL.revokeObjectURL(imgUrl);
+  }
+}
+
+async function fileToImage(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = url;
+    await new Promise((res, rej) => {
+      img.onload = () => res();
+      img.onerror = () => rej(new Error("อ่านรูปไม่สำเร็จ"));
+    });
+    return img;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function canvasToBlob(canvas, type, quality) {
+  return await new Promise((res, rej) => {
+    canvas.toBlob(
+      (b) => {
+        if (!b) return rej(new Error("แปลงรูปไม่สำเร็จ"));
+        res(b);
+      },
+      type,
+      quality,
+    );
+  });
+}
+
+async function compressImageToMaxBytes(file, maxBytes) {
+  const originalBytes = file.size || 0;
+  if (originalBytes <= maxBytes) {
+    return {
+      file,
+      didCompress: false,
+      originalBytes,
+      finalBytes: originalBytes,
+    };
+  }
+
+  const img = await fileToImage(file);
+
+  // สำหรับ avatar ไม่ต้องใหญ่เกินนี้
+  let w = img.naturalWidth || img.width;
+  let h = img.naturalHeight || img.height;
+
+  // ลดขนาดภาพก่อน
+  const MAX_SIDE = 1600;
+  const scale = Math.min(1, MAX_SIDE / Math.max(w, h));
+  w = Math.max(1, Math.round(w * scale));
+  h = Math.max(1, Math.round(h * scale));
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d", { alpha: false });
+  canvas.width = w;
+  canvas.height = h;
+  ctx.drawImage(img, 0, 0, w, h);
+
+  // ลองลด quality ทีละขั้น
+  let bestBlob = null;
+  let bestQ = 0.92;
+
+  for (let q = 0.92; q >= 0.6; q -= 0.06) {
+    const blob = await canvasToBlob(canvas, "image/jpeg", q);
+    bestBlob = blob;
+    bestQ = q;
+    if (blob.size <= maxBytes) break;
+  }
+
+  // ถ้ายังใหญ่ไปอีก ลดมิติอีกรอบ
+  if (bestBlob && bestBlob.size > maxBytes) {
+    const shrink = 0.85;
+    const w2 = Math.max(1, Math.round(w * shrink));
+    const h2 = Math.max(1, Math.round(h * shrink));
+    canvas.width = w2;
+    canvas.height = h2;
+    ctx.drawImage(img, 0, 0, w2, h2);
+
+    for (let q = bestQ; q >= 0.55; q -= 0.05) {
+      const blob = await canvasToBlob(canvas, "image/jpeg", q);
+      bestBlob = blob;
+      if (blob.size <= maxBytes) break;
+    }
+  }
+
+  const finalBytes = bestBlob?.size || originalBytes;
+
+  const nameBase = (file.name || "avatar").replace(/\.[^/.]+$/, "");
+  const outFile = new File([bestBlob], `${nameBase}.jpg`, {
+    type: "image/jpeg",
+  });
+
+  return { file: outFile, didCompress: true, originalBytes, finalBytes };
+}
+
 function Switch({ checked, onChange, labelOn, labelOff }) {
   return (
     <button
@@ -114,8 +265,6 @@ function Switch({ checked, onChange, labelOn, labelOff }) {
   );
 }
 
-const MAX_AVATAR_MB = 5;
-
 export default function ReviewEditClient({ id }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -148,6 +297,11 @@ export default function ReviewEditClient({ id }) {
   const [avatarRemove, setAvatarRemove] = useState(false); // ตั้งใจลบรูปเดิม
   const [avatarBusy, setAvatarBusy] = useState(false); // ตอนอัปโหลดรูป
   const [avatarErr, setAvatarErr] = useState("");
+  const [avatarInfo, setAvatarInfo] = useState("");
+  const [cropOpen, setCropOpen] = useState(false);
+  const [cropFile, setCropFile] = useState(null);
+  const [cropSrc, setCropSrc] = useState(""); // objectURL ของไฟล์ที่เลือก
+  const [cropFileName, setCropFileName] = useState("avatar.jpg");
 
   const initialRef = useRef(null);
 
@@ -249,6 +403,13 @@ export default function ReviewEditClient({ id }) {
   }, [dirty]);
 
   useEffect(() => {
+    return () => {
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     let alive = true;
 
     const safeId = String(id || "").trim();
@@ -335,14 +496,15 @@ export default function ReviewEditClient({ id }) {
       return;
     }
 
-    if (file.size > MAX_AVATAR_MB * 1024 * 1024) {
-      setAvatarErr(`ไฟล์ใหญ่เกินไป (เกิน ${MAX_AVATAR_MB}MB)`);
-      return;
-    }
-
-    // เลือกรูปใหม่ = ไม่ลบรูป (แทนที่)
+    // ✅ ไม่บล็อคขนาดแล้ว → ครอปแล้วค่อยได้ไฟล์ใหม่ที่เล็กลงเอง
     setAvatarRemove(false);
-    setAvatarFile(file);
+
+    // เปิด modal ครอป
+    setCropFile(file);
+    setCropOpen(true);
+
+    // ให้เลือกไฟล์เดิมซ้ำได้
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   async function uploadAvatar(file) {
@@ -445,12 +607,66 @@ export default function ReviewEditClient({ id }) {
 
   return (
     <div>
+      <AvatarCropModal
+        open={cropOpen}
+        file={cropFile}
+        onClose={() => {
+          setCropOpen(false);
+          setCropFile(null);
+        }}
+        onConfirm={(cropped) => {
+          // ✅ ได้ไฟล์ที่ครอปแล้ว (square) พร้อมอัปโหลดตอนกดบันทึก
+          setAvatarFile(cropped);
+          setAvatarRemove(false);
+          setAvatarErr("");
+        }}
+        outputSize={800}
+      />
       {/* Lightbox */}
       <ImageLightbox
         url={lightboxUrl}
         onClose={() => setLightboxUrl("")}
         alt="avatar"
       />
+
+      {/* <AvatarCropModal
+        open={cropOpen}
+        src={cropSrc}
+        fileName={cropFileName}
+        onCancel={() => {
+          setCropOpen(false);
+          // ไม่ล้าง cropSrc ทันทีเพื่อไม่ให้ modal กระพริบ แต่ถ้าจะล้างก็ได้
+        }}
+        onConfirm={async ({ blob, previewUrl, info }) => {
+          try {
+            setAvatarBusy(true);
+            setAvatarErr("");
+            setAvatarInfo(info || "");
+
+            // ✅ บีบอัดหลังครอป (ไม่บล็อคไฟล์ใหญ่ แต่กันอัปโหลดพัง)
+            const TARGET_BYTES = Math.floor(4.2 * 1024 * 1024);
+            const outBlob = await compressBlobToMaxBytes(blob, TARGET_BYTES);
+
+            // แปลงเป็น File เพื่อไป upload แบบเดิม
+            const f = new File([outBlob], "avatar.jpg", { type: "image/jpeg" });
+
+            // อัปเดต state ให้ preview ในหน้าเป็นรูปที่ครอปแล้ว
+            setAvatarFile(f);
+
+            // ปิด modal
+            setCropOpen(false);
+
+            // ตั้ง info
+            setAvatarInfo(
+              `ครอปแล้ว: ${formatBytes(blob.size)} → ${formatBytes(outBlob.size)}`,
+            );
+          } catch (e) {
+            setAvatarErr(e?.message || "ครอป/บีบอัดไม่สำเร็จ");
+          } finally {
+            setAvatarBusy(false);
+          }
+        }}
+      /> */}
 
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -804,21 +1020,38 @@ export default function ReviewEditClient({ id }) {
                   </div>
                 ) : null}
 
+                {avatarInfo ? (
+                  <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                    {avatarInfo}
+                  </div>
+                ) : null}
+
                 <div className="mt-3">
                   {avatarDisplayUrl ? (
                     <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                       <button
                         type="button"
-                        onClick={() => setLightboxUrl(avatarDisplayUrl)}
-                        className="h-16 w-16 overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200"
+                        onClick={() =>
+                          setLightboxUrl(cloudinaryAvatarFull(avatarDisplayUrl))
+                        }
+                        className="h-16 w-16 shrink-0 overflow-hidden rounded-full bg-white ring-1 ring-slate-200"
                         title="คลิกเพื่อดูรูปเต็ม"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={avatarDisplayUrl}
-                          alt="avatar"
-                          className="h-full w-full object-cover"
-                        />
+                        {(() => {
+                          const raw = avatarDisplayUrl || "";
+                          const src = raw
+                            ? cloudinaryAvatarThumb(raw, 160) || raw
+                            : "";
+                          if (!src) return null;
+
+                          return (
+                            <img
+                              src={src}
+                              alt="avatar"
+                              className="h-full w-full object-cover object-top"
+                            />
+                          );
+                        })()}
                       </button>
 
                       <div className="min-w-0 flex-1">
@@ -837,7 +1070,7 @@ export default function ReviewEditClient({ id }) {
 
                         {!avatarFile && avatarUrlCurrent ? (
                           <a
-                            href={avatarUrlCurrent}
+                            href={cloudinaryAvatarFull(avatarUrlCurrent)}
                             target="_blank"
                             rel="noreferrer"
                             className="mt-1 inline-block text-xs font-semibold text-blue-700 underline decoration-blue-700/30 underline-offset-4 hover:text-blue-800"

@@ -27,6 +27,9 @@ const ReviewSchema = new mongoose.Schema(
     consentAcceptedAt: { type: Date, default: null },
     consentVersion: { type: String, default: "v1" },
 
+    pinnedAt: { type: Date, default: null, index: true },
+    body: { type: String, default: "" }, // ถ้ายังไม่มี
+
     // ✅ Moderation
     status: {
       type: String,
