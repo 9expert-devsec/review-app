@@ -1,4 +1,3 @@
-// src/app/api/admin/reviews/route.js
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import dbConnect from "@/lib/mongoose";
@@ -83,9 +82,15 @@ export async function GET(req) {
         { reviewerName: re },
         { reviewerCompany: re },
         { reviewerRole: re },
-        { headline: re },
-        { comment: re },
         { courseName: re },
+
+        // ✅ ใหม่: ใช้ body เป็นหลัก
+        { body: re },
+
+        // legacy รองรับข้อมูลเก่า
+        { comment: re },
+        { headline: re },
+
         { reviewerEmailLower: new RegExp(escapeRegExp(em), "i") },
       ];
     }
@@ -96,20 +101,30 @@ export async function GET(req) {
     const [total, items] = await Promise.all([
       Review.countDocuments(where),
       Review.find(where)
-        .sort({ createdAt: -1 })
+        // ✅ ปักหมุด: Active ขึ้นก่อน, ในกลุ่ม Active เรียงตาม pinnedAt ล่าสุด
+        .sort({ isActive: -1, pinnedAt: -1, createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .select({
           courseId: 1,
           courseName: 1,
+
           reviewerName: 1,
           reviewerEmail: 1,
           reviewerEmailLower: 1,
           reviewerCompany: 1,
           reviewerRole: 1,
+
           rating: 1,
+
+          // ✅ ใหม่
+          body: 1,
+          pinnedAt: 1,
+
+          // legacy
           headline: 1,
           comment: 1,
+
           status: 1,
           isActive: 1,
           createdAt: 1,
@@ -152,8 +167,8 @@ export async function POST(req) {
     const reviewerEmail = clean(body.reviewerEmail);
     const reviewerEmailLower = cleanEmail(body.reviewerEmail);
 
-    const headline = clean(body.headline);
-    const comment = clean(body.comment);
+    // ✅ ไม่ใช้ headline แล้ว → ใช้ body/ comment เป็นตัวหลัก
+    const reviewText = clean(body.body || body.comment);
 
     if (!courseId || !isValidId(courseId)) {
       return NextResponse.json(
@@ -161,9 +176,9 @@ export async function POST(req) {
         { status: 400 },
       );
     }
-    if (!reviewerName || !reviewerEmailLower || !headline) {
+    if (!reviewerName || !reviewerEmailLower || !reviewText) {
       return NextResponse.json(
-        { ok: false, error: "reviewerName/reviewerEmail/headline required" },
+        { ok: false, error: "reviewerName/reviewerEmail/body required" },
         { status: 400 },
       );
     }
@@ -182,7 +197,7 @@ export async function POST(req) {
       );
     }
 
-    const status = normalizeStatus(body.status) || "approved"; // admin สร้างเองให้ approved ได้
+    const status = normalizeStatus(body.status) || "approved";
     const isActive = !!body.isActive;
 
     const consentAccepted = !!body.consentAccepted;
@@ -200,8 +215,13 @@ export async function POST(req) {
       reviewerRole: clean(body.reviewerRole),
 
       rating,
-      headline,
-      comment,
+
+      // ✅ ใหม่: เก็บไว้ที่ body
+      body: reviewText,
+
+      // legacy: ถ้าอะไรเก่ามีคนใช้อยู่ ยังไม่พัง
+      comment: reviewText,
+      headline: clean(body.headline), // ไม่บังคับแล้ว
 
       avatarUrl: clean(body.avatarUrl),
       avatarPublicId: clean(body.avatarPublicId),
@@ -214,6 +234,7 @@ export async function POST(req) {
       statusUpdatedAt: new Date(),
 
       isActive,
+      pinnedAt: isActive ? new Date() : null, // ✅ ถ้าสร้างมา Active ถือว่าปักหมุดทันที
       source: "admin",
     });
 

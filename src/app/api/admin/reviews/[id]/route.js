@@ -37,7 +37,6 @@ async function destroyCloudinary(publicId) {
   const pid = clean(publicId);
   if (!pid) return;
   ensureCloudinaryEnv();
-  // destroy image
   await cloudinary.uploader.destroy(pid, { resource_type: "image" });
 }
 
@@ -70,6 +69,12 @@ export async function PUT(req, ctx) {
     const patch = {};
     const now = new Date();
 
+    // อ่านตัวเดิม (ใช้สำหรับ avatar delete/replace)
+    const existing = await Review.findById(id)
+      .select("avatarUrl avatarPublicId")
+      .lean();
+    if (!existing) return bad("Not found", 404);
+
     // ---- course ----
     if (body.courseId !== undefined) {
       const courseId = clean(body.courseId);
@@ -78,6 +83,13 @@ export async function PUT(req, ctx) {
       if (!c) return bad("Course not found", 400);
       patch.courseId = courseId;
       patch.courseName = clean(c.name);
+    }
+
+    // ---- pin/active ----
+    if (typeof body.isActive === "boolean") {
+      const next = !!body.isActive;
+      patch.isActive = next;
+      patch.pinnedAt = next ? new Date() : null; // ✅ ปักหมุดตามเวลาที่กด Active
     }
 
     // ---- basic fields ----
@@ -96,9 +108,15 @@ export async function PUT(req, ctx) {
     if (body.reviewerRole !== undefined)
       patch.reviewerRole = clean(body.reviewerRole);
 
-    if (body.headline !== undefined) patch.headline = clean(body.headline);
-    if (body.comment !== undefined) patch.comment = clean(body.comment);
+    // ✅ ใหม่: เก็บรีวิวไว้ที่ body เป็นหลัก (และ sync comment เพื่อ legacy)
+    if (body.body !== undefined || body.comment !== undefined) {
+      const nextText = clean(body.body ?? body.comment);
+      if (!nextText) return bad("body required", 400);
+      patch.body = nextText;
+      patch.comment = nextText; // legacy compatibility
+    }
 
+    // rating
     if (body.rating !== undefined) {
       const r = Number(body.rating);
       if (!Number.isFinite(r) || r < 1 || r > 5)
@@ -106,29 +124,19 @@ export async function PUT(req, ctx) {
       patch.rating = r;
     }
 
-    if (body.isActive !== undefined) patch.isActive = !!body.isActive;
-
-    // ---------------- Avatar (NEW) ----------------
+    // ---------------- Avatar ----------------
     // รองรับ:
-    // - { avatarAction: "remove" }  -> ลบรูปเดิมทั้งใน DB และ Cloudinary
-    // - { avatarUrl, avatarPublicId } -> แทนที่รูปเดิม (ลบรูปเก่าบน Cloudinary ถ้ามี)
+    // - { avatarAction: "clear"|"remove" } -> ลบรูปเดิมทั้งใน DB และ Cloudinary
+    // - { avatarUrl, avatarPublicId }      -> แทนที่รูปเดิม (ลบรูปเก่าบน Cloudinary ถ้ามี)
     const avatarAction = clean(body.avatarAction);
 
-    // ต้องอ่านตัวเดิมก่อน เพื่อรู้ publicId เก่าไว้ลบ
-    const existing = await Review.findById(id)
-      .select("avatarUrl avatarPublicId")
-      .lean();
-    if (!existing) return bad("Not found", 404);
-
-    if (avatarAction === "remove") {
-      // ลบรูปเดิม
+    if (avatarAction === "remove" || avatarAction === "clear") {
       if (existing.avatarPublicId) {
         await destroyCloudinary(existing.avatarPublicId);
       }
       patch.avatarUrl = "";
       patch.avatarPublicId = "";
     } else {
-      // อัปเดตรูปใหม่ (ถ้าส่งมา)
       if (body.avatarUrl !== undefined || body.avatarPublicId !== undefined) {
         const nextUrl = clean(body.avatarUrl);
         const nextPid = clean(body.avatarPublicId);
@@ -168,8 +176,19 @@ export async function DELETE(req, ctx) {
     const { id } = await ctx.params;
     if (!isValidId(id)) return bad("Invalid id", 400);
 
-    const item = await Review.findByIdAndDelete(id).lean();
-    if (!item) return bad("Not found", 404);
+    // ลบ avatar บน cloudinary แบบ best-effort
+    const existing = await Review.findById(id).select("avatarPublicId").lean();
+    if (!existing) return bad("Not found", 404);
+
+    if (existing.avatarPublicId) {
+      try {
+        await destroyCloudinary(existing.avatarPublicId);
+      } catch {
+        // best-effort: ไม่ให้การลบ record ติดเพราะ Cloudinary
+      }
+    }
+
+    await Review.findByIdAndDelete(id);
 
     return NextResponse.json({ ok: true });
   } catch (e) {

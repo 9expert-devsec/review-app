@@ -1,3 +1,4 @@
+// src/app/(public)/review/ReviewFormClient.jsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -128,11 +129,7 @@ function TermsModal({ open, onClose }) {
 /* ---------------- Image compress (client) ---------------- */
 async function compressImageFile(
   file,
-  {
-    maxSize = 1024,
-    quality = 0.82,
-    mimeType = "image/webp", // "image/jpeg" ก็ได้
-  } = {},
+  { maxSize = 1024, quality = 0.82, mimeType = "image/webp" } = {},
 ) {
   if (!file || !file.type?.startsWith("image/")) return file;
 
@@ -198,7 +195,7 @@ export default function WriteReviewClient() {
   const [courseId, setCourseId] = useState("");
   const [rating, setRating] = useState(0);
 
-  const [title, setTitle] = useState("");
+  // ✅ เหลือแค่ body
   const [body, setBody] = useState("");
 
   const [consent, setConsent] = useState(false);
@@ -218,9 +215,8 @@ export default function WriteReviewClient() {
         const res = await fetch("/api/public/courses", { cache: "no-store" });
         const j = await res.json();
         if (!alive) return;
-        if (!res.ok || !j?.ok) {
+        if (!res.ok || !j?.ok)
           throw new Error(j?.error || "Load courses failed");
-        }
         setCourses(j.items || []);
       } catch (e) {
         if (!alive) return;
@@ -264,7 +260,6 @@ export default function WriteReviewClient() {
     try {
       setErr("");
 
-      // ถ้าไฟล์ใหญ่เกิน 5MB -> บีบอัดอัตโนมัติ
       let chosen = file;
       if (file.size > maxBytes) {
         chosen = await compressImageFile(file, {
@@ -281,7 +276,7 @@ export default function WriteReviewClient() {
       }
 
       setAvatarFile(chosen);
-      resetFileInput(); // เพื่อให้เลือกไฟล์เดิมซ้ำได้
+      resetFileInput();
     } catch {
       setErr("ไม่สามารถประมวลผลรูปภาพได้ กรุณาลองไฟล์อื่น");
       resetFileInput();
@@ -294,11 +289,10 @@ export default function WriteReviewClient() {
     if (!email.trim()) return false;
     if (!courseId) return false;
     if (rating < 1 || rating > 5) return false;
-    if (!title.trim()) return false;
-    if (!body.trim()) return false;
+    if (!body.trim()) return false; // ✅ ต้องมีรีวิว
     if (!consent) return false;
     return true;
-  }, [submitting, fullName, email, courseId, rating, title, body, consent]);
+  }, [submitting, fullName, email, courseId, rating, body, consent]);
 
   async function uploadAvatar(file) {
     const fd = new FormData();
@@ -311,7 +305,6 @@ export default function WriteReviewClient() {
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data?.ok) throw new Error(data?.error || "Upload failed");
-
     return data; // { ok:true, url, publicId }
   }
 
@@ -335,7 +328,6 @@ export default function WriteReviewClient() {
     try {
       setSubmitting(true);
 
-      // 1) อัปโหลดรูปก่อน (ถ้ามี)
       let avatarUrl = "";
       let avatarPublicId = "";
       if (avatarFile) {
@@ -344,7 +336,6 @@ export default function WriteReviewClient() {
         avatarPublicId = up.publicId || "";
       }
 
-      // 2) ส่งรีวิว
       await submitReview({
         fullName,
         email,
@@ -352,8 +343,7 @@ export default function WriteReviewClient() {
         jobTitle,
         courseId,
         rating,
-        title,
-        body,
+        body, // ✅ ส่งแค่ body
         consent,
         avatarUrl,
         avatarPublicId,
@@ -372,7 +362,6 @@ export default function WriteReviewClient() {
       <TermsModal open={showTerms} onClose={() => setShowTerms(false)} />
 
       <div className="mx-auto max-w-6xl px-6 py-14">
-        {/* Header */}
         <div className="text-center">
           <div className="text-xs font-semibold tracking-[0.25em] text-blue-600">
             SHARE YOUR EXPERIENCE
@@ -386,7 +375,6 @@ export default function WriteReviewClient() {
           </p>
         </div>
 
-        {/* Card */}
         <div className="mt-10 flex justify-center">
           <form
             onSubmit={onSubmit}
@@ -495,19 +483,8 @@ export default function WriteReviewClient() {
 
             <SectionTitle2>เขียนรีวิว</SectionTitle2>
 
+            {/* ✅ ตัดหัวข้อออก เหลือ textarea */}
             <div className="mt-6">
-              <label className={labelCls}>
-                หัวข้อรีวิว <span className={reqCls}>*</span>
-              </label>
-              <input
-                className={inputCls}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder='เช่น "ประทับใจมากครับ!"'
-              />
-            </div>
-
-            <div className="mt-5">
               <label className={labelCls}>
                 รายละเอียดรีวิว/คำชม <span className={reqCls}>*</span>
               </label>
@@ -581,7 +558,6 @@ export default function WriteReviewClient() {
                 ) : (
                   <div className="flex items-center gap-5">
                     <div className="h-14 w-14 overflow-hidden rounded-2xl ring-1 ring-slate-200 bg-white">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={avatarPreview}
                         alt="avatar preview"
