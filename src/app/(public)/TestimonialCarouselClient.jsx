@@ -78,11 +78,7 @@ function TestimonialCard({ item }) {
   const metaText = metaParts.join(" • ");
 
   return (
-<<<<<<< Updated upstream
-    <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
-=======
     <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_6px_12px_rgba(15,23,42,0.06)] h-full flex flex-col">
->>>>>>> Stashed changes
       <StarsRow rating={item.rating} />
 
       {/* ทำส่วนข้อความให้เป็นตัวดันความสูง */}
@@ -107,18 +103,25 @@ function TestimonialCard({ item }) {
           </div>
 
           {/* role + company (บรรทัดเดียว) */}
-{(() => {
-  const role = String(item.reviewerRole || item.jobTitle || "").trim();
-  const company = String(item.reviewerCompany || item.company || "").trim();
-  const line = [role, company].filter(Boolean).join(" • ");
-  if (!line) return null;
+          {(() => {
+            const role = String(
+              item.reviewerRole || item.jobTitle || "",
+            ).trim();
+            const company = String(
+              item.reviewerCompany || item.company || "",
+            ).trim();
+            const line = [role, company].filter(Boolean).join(" • ");
+            if (!line) return null;
 
-  return (
-    <div className="mt-0.5 text-xs text-slate-500 line-clamp-1" title={line}>
-      {line}
-    </div>
-  );
-})()}
+            return (
+              <div
+                className="mt-0.5 text-xs text-slate-500 line-clamp-1"
+                title={line}
+              >
+                {line}
+              </div>
+            );
+          })()}
 
           {/* 3) หลักสูตร (ถ้ามี) */}
           {String(item.courseName || "").trim() ? (
@@ -271,11 +274,7 @@ export default function TestimonialCarouselClient({ items = [] }) {
       {/* Viewport */}
       <div className="overflow-hidden">
         <div
-<<<<<<< Updated upstream
-          className="flex"
-=======
           className="flex items-stretch py-10"
->>>>>>> Stashed changes
           onTransitionEnd={handleTransitionEnd}
           style={{
             transform: `translateX(-${shiftPct}%)`,
