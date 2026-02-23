@@ -4,6 +4,12 @@
 :root {
   --background: #ffffff;
   --foreground: #0d1b2a;
+
+  /* ✅ Chat theme tokens (ใช้โดย ChatWidget.jsx) */
+  --chat-primary: #0d1b2a;        /* สีหลัก (เข้ากับ foreground ของเว็บ) */
+  --chat-primary-dark: #3b82f6;   /* สีไล่เฉด (ให้ดู modern ขึ้น) */
+  --chat-link: #2563eb;          /* สีลิงก์ */
+  --chat-bot-avatar-bg: #e8eef7; /* พื้นหลังวง avatar bot */
 }
 
 /* Tailwind v4 theme tokens */
@@ -11,14 +17,12 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* ✅ Google Sans first, fallback ไทย */
   --font-sans: "Google Sans", "Noto Sans Thai", system-ui, -apple-system,
     "Segoe UI", Roboto, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 }
 
-/* ✅ ไม่ให้ auto เปลี่ยนเป็นธีมดำตาม OS */
 html {
   scroll-behavior: smooth;
 }
