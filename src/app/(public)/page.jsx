@@ -60,10 +60,10 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="bg-white h-screen items-center justify-center flex">
         <div className="mx-auto max-w-5xl px-6 text-center">
-          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm">
+          {/* <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-amber-400" />
             เปิดรับรีวิวจากผู้เรียน 9Expert
-          </div>
+          </div> */}
 
           <h1 className="mt-10 text-5xl font-bold leading-[1.1] tracking-tight text-[#0D1B2A] md:text-6xl">
             แบ่งปัน{" "}
