@@ -486,7 +486,7 @@ function CourseCarousel({ items }) {
         {items.map((c, i) => (
           <div
             key={c.course_id || c.id || c._id || i}
-            className="w-[280px] shrink-0 snap-start sm:w-[320px] md:w-[340px]"
+            className="w-[85vw] max-w-[360px] shrink-0 snap-start sm:w-[320px] md:w-[340px]"
           >
             <CourseCard item={c} />
           </div>
@@ -535,7 +535,7 @@ function PromotionCarousel({ items }) {
         {items.map((p, i) => (
           <div
             key={p.id || p._id || i}
-            className="w-[300px] shrink-0 snap-start sm:w-[360px] md:w-[420px]"
+            className="w-[88vw] max-w-[420px] shrink-0 snap-start sm:w-[360px] md:w-[420px]"
           >
             <PromotionCard item={p} />
           </div>
@@ -625,9 +625,9 @@ export default function ChatWidget() {
   };
 
   // ✅ fullscreen center / normal bottom-right
-  const windowClass = isFullscreen
-    ? "w-[90vw] left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 h-[90vh] max-w-[1200px] max-h-[900px]"
-    : "right-5 bottom-20 w-[70vw] max-w-[720px] h-[85vh] max-h-[85vh] sm:h-[80vh]";
+const windowClass = isFullscreen
+  ? "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 sm:w-[92vw] sm:h-[92vh] sm:max-w-[1200px] sm:max-h-[900px]  h-screen w-screen"
+  : "left-0 right-0 bottom-0 top-0 w-auto h-auto sm:left-auto sm:right-5 sm:bottom-20 sm:top-auto sm:w-[70vw] sm:max-w-[720px] sm:h-[85vh] sm:max-h-[85vh]";
 
   const headerStyle = {
     background:
@@ -676,12 +676,17 @@ export default function ChatWidget() {
   return (
     <>
       {/* Floating Button */}
+
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="cursor-pointer fixed bottom-5 right-5 z-[999] flex items-center justify-center rounded-full p-3 shadow-lg ring-1 ring-white/20 transition-all hover:shadow-xl"
+        className="cursor-pointer fixed bottom-5 right-5 z-800 sm:z-999 flex items-center justify-center rounded-full p-3 
+             shadow-[0_0_15px_rgba(255,255,255,0.1)] ring-1 ring-white/20 
+             transition-all duration-500 ease-[box-bezier(0.23,1,0.32,1)]
+             hover:shadow-[0_0_30px_rgba(var(--primary-color),0.5)] 
+             hover:-translate-y-2 hover:brightness-125
+             active:scale-90 active:duration-150"
         style={floatingStyle}
-        aria-label="Open chat"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -692,9 +697,10 @@ export default function ChatWidget() {
         <span className="ml-2 text-sm font-semibold text-white">Chat AI</span>
       </button>
 
+
       {/* Overlay */}
       {open && (
-        <div className="fixed inset-0 z-[70]">
+        <div className="fixed inset-0 z-999 sm:z-800">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={() => setOpen(false)}
@@ -702,7 +708,7 @@ export default function ChatWidget() {
 
           <div
             className={cx(
-              "absolute flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5",
+              "absolute flex flex-col overflow-hidden sm:rounded-2xl bg-white shadow-2xl ring-1 ring-black/5",
               "transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
               windowClass,
             )}
@@ -946,7 +952,7 @@ export default function ChatWidget() {
                     style={floatingStyle}
                   >
                     <SendIcon className="h-4 w-4" />
-                    ส่ง
+<span className="hidden sm:inline">ส่ง</span>
                   </button>
                 </form>
 

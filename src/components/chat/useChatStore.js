@@ -1,3 +1,4 @@
+// src/components/chat/useChatStore.js
 "use client";
 
 import { useCallback, useMemo, useReducer } from "react";
@@ -23,10 +24,15 @@ const initialState = {
   error: "",
 };
 
+function safeArr(x) {
+  return Array.isArray(x) ? x : [];
+}
+
 function reducer(state, action) {
   switch (action.type) {
     case "INIT":
       return { ...state, sessionId: action.sessionId };
+
     case "USER":
       return {
         ...state,
@@ -36,6 +42,7 @@ function reducer(state, action) {
           { id: uid(), role: "user", text: action.text, createdAt: Date.now() },
         ],
       };
+
     case "ASSISTANT":
       return {
         ...state,
@@ -46,18 +53,22 @@ function reducer(state, action) {
             role: "assistant",
             text: action.text,
             createdAt: Date.now(),
-            quickReplies: action.quickReplies || [],
-            courses: action.courses || [],
-            promotions: action.promotions || [],
+            quickReplies: safeArr(action.quickReplies),
+            courses: safeArr(action.courses),
+            promotions: safeArr(action.promotions),
           },
         ],
       };
+
     case "LOADING":
       return { ...state, isLoading: action.value };
+
     case "ERROR":
       return { ...state, error: action.error || "" };
+
     case "RESET":
       return { ...initialState, sessionId: state.sessionId };
+
     default:
       return state;
   }

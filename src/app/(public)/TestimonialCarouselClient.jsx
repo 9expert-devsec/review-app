@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  Building2,
+  Briefcase,
+  GraduationCap,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import {
   cloudinaryAvatarThumb,
   cloudinaryAvatarFull,
@@ -9,6 +18,10 @@ import {
 
 function cx(...a) {
   return a.filter(Boolean).join(" ");
+}
+
+function clean(s) {
+  return String(s ?? "").trim();
 }
 
 function clampRating(x) {
@@ -35,7 +48,7 @@ function Avatar({ name, url }) {
       .slice(0, 1) || "?";
 
   if (url) {
-    const thumb = cloudinaryAvatarThumb(url, 160); // จะใช้ 96 ก็ได้ แต่ 160 จะคมขึ้น (ยังแสดง 40px เหมือนเดิม)
+    const thumb = cloudinaryAvatarThumb(url, 160);
     return (
       <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full ring-1 ring-slate-200 bg-white">
         <img
@@ -61,77 +74,100 @@ function pickReviewText(item) {
     .replace(/\s+\n/g, "\n");
 }
 
-function cloudThumb(url, size = 96) {
-  const s = String(url || "");
-  const marker = "/image/upload/";
-  const i = s.indexOf(marker);
-  if (i === -1) return s;
-
-  // ใช้ g_auto เพื่อโฟกัสจุดสำคัญ (มักเป็นหน้า) แบบปลอดภัย
-  // ถ้าคุณอยาก “เน้นหน้า” แบบชัดขึ้น ลองเปลี่ยน g_auto -> g_face ได้
-  const t = `c_fill,g_auto,w_${size},h_${size},q_auto,f_auto`;
-  return s.slice(0, i + marker.length) + t + "/" + s.slice(i + marker.length);
+function InfoLine({ icon: Icon, text, title }) {
+  const t = clean(text);
+  if (!t) return null;
+  return (
+    <div
+      className="flex items-center gap-2 text-xs text-slate-500"
+      title={title || t}
+    >
+      <Icon className="h-4 w-4 text-slate-400 shrink-0" />
+      <div className="min-w-0 truncate">{t}</div>
+    </div>
+  );
 }
 
-function TestimonialCard({ item }) {
-  const metaParts = [item.courseName, item.reviewerCompany].filter(Boolean);
-  const metaText = metaParts.join(" • ");
+function TestimonialCard({ item, expanded, onToggle }) {
+  const headline = clean(item?.headline || item?.title || "");
+  const text = pickReviewText(item);
+  const reviewerName = clean(item?.reviewerName || item?.name || "-");
+
+  const role = clean(
+    item?.reviewerRole || item?.jobTitle || item?.position || "",
+  );
+  const company = clean(
+    item?.reviewerCompany || item?.company || item?.companyName || "",
+  );
+  const course = clean(item?.courseName || item?.course_title || "");
+
+  // ✅ ความสูงเท่ากันทุกใบ: fix min-height + layout แบบ flex
+  // ✅ ขยาย/ย่อ: ตอน expanded จะให้กล่องข้อความ scroll ภายใน (การ์ดไม่สูงขึ้น)
+  const showToggle = text.length > 160; // ปรับ threshold ได้
+  const textBoxClass = expanded
+    ? "max-h-[220px] overflow-y-auto pr-2"
+    : "max-h-[128px] overflow-hidden";
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_6px_12px_rgba(15,23,42,0.06)] h-full flex flex-col">
+    <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_6px_12px_rgba(15,23,42,0.06)] h-full w-[340px] min-h-[380px] flex flex-col">
       <StarsRow rating={item.rating} />
 
-      {/* ทำส่วนข้อความให้เป็นตัวดันความสูง */}
-      <div className="mt-4 text-sm leading-7 text-slate-800 flex-1">
+      {/* ส่วนข้อความ = โซนหลัก */}
+      <div className="mt-4 flex-1 min-h-0">
         <div className="font-semibold text-slate-900 line-clamp-2">
-          {item.headline || ""}
+          {headline}
         </div>
-        <div className="mt-2 whitespace-pre-line text-slate-700 line-clamp-5">
-          {item.comment || ""}
+
+        <div
+          className={cx(
+            "mt-2 whitespace-pre-line text-sm leading-7 text-slate-700",
+            textBoxClass,
+          )}
+        >
+          {expanded ? (
+            <div>{text}</div>
+          ) : (
+            <div className="line-clamp-5">{text}</div>
+          )}
         </div>
+
+        {showToggle ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900"
+          >
+            {expanded ? (
+              <>
+                ย่อข้อความ <ChevronUp className="h-4 w-4" />
+              </>
+            ) : (
+              <>
+                ดูเพิ่มเติม <ChevronDown className="h-4 w-4" />
+              </>
+            )}
+          </button>
+        ) : null}
       </div>
 
       {/* แถบโปรไฟล์อยู่ล่างสุดเสมอ */}
-      {/* แถบโปรไฟล์อยู่ล่างสุดเสมอ */}
-      <div className="mt-6 flex items-center gap-4">
-        <Avatar name={item.reviewerName} url={item.avatarUrl} />
+      <div className="flex items-start gap-4 h-20">
+        <Avatar name={reviewerName} url={item.avatarUrl} />
 
         <div className="min-w-0 flex-1">
-          {/* ชื่อ */}
+          {/* 1) ชื่อ */}
           <div className="font-semibold text-[#0D1B2A] line-clamp-1">
-            {item.reviewerName || "-"}
+            {reviewerName}
           </div>
 
-          {/* role + company (บรรทัดเดียว) */}
-          {(() => {
-            const role = String(
-              item.reviewerRole || item.jobTitle || "",
-            ).trim();
-            const company = String(
-              item.reviewerCompany || item.company || "",
-            ).trim();
-            const line = [role, company].filter(Boolean).join(" • ");
-            if (!line) return null;
+          {/* 2) ตำแหน่ง (มี icon) */}
+          <InfoLine icon={Briefcase} text={role} />
 
-            return (
-              <div
-                className="mt-0.5 text-xs text-slate-500 line-clamp-1"
-                title={line}
-              >
-                {line}
-              </div>
-            );
-          })()}
+          {/* 3) บริษัท (มี icon) */}
+          <InfoLine icon={Building2} text={company} />
 
-          {/* 3) หลักสูตร (ถ้ามี) */}
-          {String(item.courseName || "").trim() ? (
-            <div
-              className="mt-0.5 text-sm text-slate-500 line-clamp-1"
-              title={String(item.courseName || "").trim()}
-            >
-              {String(item.courseName || "").trim()}
-            </div>
-          ) : null}
+          {/* 4) หลักสูตร (มี icon) */}
+          <InfoLine icon={GraduationCap} text={course} />
         </div>
       </div>
     </div>
@@ -142,7 +178,6 @@ export default function TestimonialCarouselClient({ items = [] }) {
   const [hovered, setHovered] = useState(false);
   const [perView, setPerView] = useState(3);
 
-  // ✅ perView จริง = ไม่เกินจำนวน items (กันกรณี items น้อย)
   const realPerView = Math.max(1, Math.min(perView, items.length || 1));
   const canLoop = items.length > realPerView;
 
@@ -150,7 +185,10 @@ export default function TestimonialCarouselClient({ items = [] }) {
   const [isTransitioning, setIsTransitioning] = useState(true);
   const transitionSpeed = 500; // ms
 
-  // 1) สร้าง list สำหรับ infinite loop เฉพาะตอนที่ canLoop
+  // ✅ state สำหรับ “ยืด/หด” แบบคงอยู่ระหว่างเลื่อน
+  // ใช้ reviewer id ถ้ามี ไม่งั้น fallback ด้วย _id/id
+  const [expandedKey, setExpandedKey] = useState("");
+
   const extendedList = useMemo(() => {
     if (!items.length) return [];
     if (!canLoop) return items;
@@ -160,7 +198,6 @@ export default function TestimonialCarouselClient({ items = [] }) {
     return [...before, ...items, ...after];
   }, [items, canLoop, realPerView]);
 
-  // 2) ตั้ง index เริ่มต้น
   useEffect(() => {
     if (!items.length) return;
     if (!canLoop) {
@@ -172,7 +209,7 @@ export default function TestimonialCarouselClient({ items = [] }) {
     setIndex(realPerView);
   }, [items.length, canLoop, realPerView]);
 
-  // 3) Responsive
+  // Responsive
   useEffect(() => {
     function calc() {
       const w = window.innerWidth;
@@ -189,7 +226,7 @@ export default function TestimonialCarouselClient({ items = [] }) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // 4) Infinite loop warp
+  // Infinite loop warp
   const handleTransitionEnd = () => {
     if (!canLoop) return;
 
@@ -211,7 +248,7 @@ export default function TestimonialCarouselClient({ items = [] }) {
     }
   }, [isTransitioning, canLoop]);
 
-  // 5) Autoplay
+  // Autoplay
   useEffect(() => {
     if (!canLoop) return;
     if (hovered) return;
@@ -257,6 +294,7 @@ export default function TestimonialCarouselClient({ items = [] }) {
             type="button"
             onClick={prev}
             className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 h-12 w-12 rounded-2xl border border-slate-200 bg-white shadow-sm flex items-center justify-center hover:bg-slate-50 active:scale-[0.98] transition"
+            aria-label="ก่อนหน้า"
           >
             <ChevronLeft className="h-5 w-5 text-slate-700" />
           </button>
@@ -265,6 +303,7 @@ export default function TestimonialCarouselClient({ items = [] }) {
             type="button"
             onClick={next}
             className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 h-12 w-12 rounded-2xl border border-slate-200 bg-white shadow-sm flex items-center justify-center hover:bg-slate-50 active:scale-[0.98] transition"
+            aria-label="ถัดไป"
           >
             <ChevronRight className="h-5 w-5 text-slate-700" />
           </button>
@@ -284,15 +323,27 @@ export default function TestimonialCarouselClient({ items = [] }) {
                 : "none",
           }}
         >
-          {extendedList.map((it, i) => (
-            <div
-              key={`${it.id || it._id}-${i}`}
-              className="shrink-0 px-3 h-full"
-              style={{ flexBasis: `${100 / realPerView}%` }}
-            >
-              <TestimonialCard item={it} />
-            </div>
-          ))}
+          {extendedList.map((it, i) => {
+            const baseId = String(
+              it?.id || it?._id || it?.sourceId || it?.reviewerId || "",
+            );
+            const key = baseId || `${i}`;
+            const isExpanded = expandedKey === key;
+
+            return (
+              <div
+                key={`${it.id || it._id}-${i}`}
+                className="shrink-0 px-3 h-full"
+                style={{ flexBasis: `${100 / realPerView}%` }}
+              >
+                <TestimonialCard
+                  item={it}
+                  expanded={isExpanded}
+                  onToggle={() => setExpandedKey(isExpanded ? "" : key)}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -5,14 +5,12 @@ function asArray(x) {
 }
 
 function unwrap(x) {
-  // บาง backend ชอบห่อ response ไว้ใน data/result/payload
   return x?.data ?? x?.result ?? x?.payload ?? x;
 }
 
 function pickText(d) {
-  // ✅ Backend ของคุณใช้ key = response
   return (
-    d?.response ??
+    d?.response ?? // ✅ backend ของคุณ
     d?.reply ??
     d?.message ??
     d?.text ??
@@ -20,9 +18,6 @@ function pickText(d) {
     d?.output ??
     d?.assistantText ??
     d?.assistant?.text ??
-    d?.responseText ??
-    d?.ui?.response ??
-    d?.data?.response ??
     ""
   );
 }
@@ -30,20 +25,51 @@ function pickText(d) {
 function normalizeQuickReplies(d) {
   const raw =
     d?.quickReplies ??
-    d?.quick_replies ??
-    d?.suggestions ??
-    d?.chips ??
+    d?.quick_replies ?? // ✅ backend ของคุณ (บาง intent เป็น object)
     d?.quickReplyChips ??
+    d?.chips ??
+    d?.suggestions ??
+    d?.suggested_questions ??
+    d?.categories ??
     d?.ui?.quickReplies ??
+    d?.ui?.chips ??
     [];
 
-  // รองรับทั้ง ["a","b"] และ [{text:"a"}]
-  return asArray(raw)
-    .map((x) =>
-      typeof x === "string" ? x : x?.text || x?.label || x?.value || "",
-    )
-    .map((s) => String(s || "").trim())
-    .filter(Boolean);
+  // เคส 1: array
+  if (Array.isArray(raw)) {
+    return raw
+      .map((x) => {
+        if (typeof x === "string") return x;
+        return x?.text || x?.label || x?.value || x?.name || "";
+      })
+      .map((s) => String(s || "").trim())
+      .filter(Boolean);
+  }
+
+  // เคส 2: object/map เช่น { "Microsoft Excel": 5, "Power BI": 3 }
+  if (raw && typeof raw === "object") {
+    return Object.entries(raw)
+      .map(([k, v]) => {
+        const label = String(k || "").trim();
+        if (!label) return null;
+
+        const count =
+          typeof v === "number"
+            ? v
+            : typeof v === "string"
+              ? Number(v)
+              : (v?.count ?? v?.total ?? null);
+
+        return {
+          label, // QuickChatBar จะเติม (count) ให้เองได้ หรือคุณจะเติมเองก็ได้
+          value: label,
+          count: Number.isFinite(count) ? count : null,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  return [];
 }
 
 function normalizeCourses(d) {
@@ -55,7 +81,7 @@ function normalizeCourses(d) {
     d?.ui?.courses ??
     [];
 
-  return asArray(raw);
+  return Array.isArray(raw) ? raw : [];
 }
 
 function normalizePromotions(d) {
@@ -67,16 +93,9 @@ function normalizePromotions(d) {
     d?.ui?.promotions ??
     [];
 
-  return asArray(raw);
+  return Array.isArray(raw) ? raw : [];
 }
 
-/**
- * Send chat message to Next.js proxy route (/api/chat)
- * Payload:
- *  - sessionId: string
- *  - message: string
- *  - history: [{ role: "user"|"assistant", content: string }]
- */
 export async function sendChat({ sessionId, message, history }) {
   const res = await fetch("/api/chat", {
     method: "POST",
@@ -99,10 +118,11 @@ export async function sendChat({ sessionId, message, history }) {
 
   const d = unwrap(raw);
 
-  const reply = String(pickText(d) || "").trim();
-  const quickReplies = normalizeQuickReplies(d);
-  const courses = normalizeCourses(d);
-  const promotions = normalizePromotions(d);
-
-  return { raw, reply, quickReplies, courses, promotions };
+  return {
+    raw,
+    reply: String(pickText(d) || "").trim(),
+    quickReplies: normalizeQuickReplies(d),
+    courses: normalizeCourses(d),
+    promotions: normalizePromotions(d),
+  };
 }
