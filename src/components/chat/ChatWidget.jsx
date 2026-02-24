@@ -729,7 +729,7 @@ const windowClass = isFullscreen
                 />
                 <div>
                   <div className="text-sm font-semibold">
-                    9Expert AI Assistant
+                    9Expert AI Agent
                   </div>
                   <div className="text-xs text-white/80">
                     ถามเรื่องคอร์ส/โปรโมชันได้เลย
@@ -829,7 +829,7 @@ const windowClass = isFullscreen
                             <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
                               <div className="mb-2 flex items-center justify-between gap-3 text-xs text-slate-500">
                                 <span className="font-semibold text-slate-700">
-                                  AI
+                                  9Expert AI Agent
                                 </span>
                                 <span>{time}</span>
                               </div>
