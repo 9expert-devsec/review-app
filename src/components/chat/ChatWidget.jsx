@@ -87,28 +87,22 @@ function WelcomeScreen({ onPick }) {
           สวัสดีครับ!
         </div>
         <div className="mt-2 text-sm text-slate-600">
-          ผมคือ AI Assistant พร้อมช่วยตอบคำถามเกี่ยวกับ
+          ผมคือ AI Agent พร้อมช่วยตอบคำถามเกี่ยวกับ
         </div>
 
-        <div className="mt-6 space-y-3 text-left">
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
-            <span className="text-lg">🧩</span>
-            <div className="text-sm font-semibold text-slate-800">
-              เส้นทางอาชีพด้าน IT
+        <div className="mt-8 mx-auto max-w-sm space-y-4 text-center">
+          {[
+            { icon: "🧩", label: "เส้นทางอาชีพด้าน IT" },
+            { icon: "🎓", label: "คอร์สเรียนที่เหมาะสม" },
+            { icon: "💡", label: "ทักษะที่ต้องพัฒนา" },
+          ].map((item, index) => (
+            <div key={index} className="flex items-center justify-center gap-3">
+              <span className="text-xl leading-none">{item.icon}</span>
+              <span className="text-sm font-medium text-slate-500">
+                {item.label}
+              </span>
             </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
-            <span className="text-lg">🎓</span>
-            <div className="text-sm font-semibold text-slate-800">
-              คอร์สเรียนที่เหมาะสม
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
-            <span className="text-lg">💡</span>
-            <div className="text-sm font-semibold text-slate-800">
-              ทักษะที่ต้องพัฒนา
-            </div>
-          </div>
+          ))}
         </div>
 
         <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -625,9 +619,9 @@ export default function ChatWidget() {
   };
 
   // ✅ fullscreen center / normal bottom-right
-const windowClass = isFullscreen
-  ? "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 sm:w-[92vw] sm:h-[92vh] sm:max-w-[1200px] sm:max-h-[900px]  h-screen w-screen"
-  : "left-0 right-0 bottom-0 top-0 w-auto h-auto sm:left-auto sm:right-5 sm:bottom-20 sm:top-auto sm:w-[70vw] sm:max-w-[720px] sm:h-[85vh] sm:max-h-[85vh]";
+  const windowClass = isFullscreen
+    ? "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 sm:w-[92vw] sm:h-[92vh] sm:max-w-[1200px] sm:max-h-[900px]  h-screen w-screen"
+    : "left-0 right-0 bottom-0 top-0 w-auto h-auto sm:left-auto sm:right-5 sm:bottom-20 sm:top-auto sm:w-[70vw] sm:max-w-[720px] sm:h-[85vh] sm:max-h-[85vh]";
 
   const headerStyle = {
     background:
@@ -697,7 +691,6 @@ const windowClass = isFullscreen
         <span className="ml-2 text-sm font-semibold text-white">Chat AI</span>
       </button>
 
-
       {/* Overlay */}
       {open && (
         <div className="fixed inset-0 z-999 sm:z-800">
@@ -728,9 +721,7 @@ const windowClass = isFullscreen
                   className="h-10 w-10 rounded-full bg-white/90 p-1 object-contain ring-1 ring-white/20"
                 />
                 <div>
-                  <div className="text-sm font-semibold">
-                    9Expert AI Agent
-                  </div>
+                  <div className="text-sm font-semibold">9Expert AI Agent</div>
                   <div className="text-xs text-white/80">
                     ถามเรื่องคอร์ส/โปรโมชันได้เลย
                   </div>
@@ -952,7 +943,7 @@ const windowClass = isFullscreen
                     style={floatingStyle}
                   >
                     <SendIcon className="h-4 w-4" />
-<span className="hidden sm:inline">ส่ง</span>
+                    <span className="hidden sm:inline">ส่ง</span>
                   </button>
                 </form>
 

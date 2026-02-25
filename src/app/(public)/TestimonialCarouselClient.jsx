@@ -99,7 +99,8 @@ function TestimonialCard({ item, expanded, onToggle }) {
   const company = clean(
     item?.reviewerCompany || item?.company || item?.companyName || "",
   );
-  const course = clean(item?.courseName || item?.course_title || "");
+  const course = clean(item?.courseName || "");
+  const title = course || headline || "";
 
   // ✅ ความสูงเท่ากันทุกใบ: fix min-height + layout แบบ flex
   // ✅ ขยาย/ย่อ: ตอน expanded จะให้กล่องข้อความ scroll ภายใน (การ์ดไม่สูงขึ้น)
@@ -107,16 +108,16 @@ function TestimonialCard({ item, expanded, onToggle }) {
   const textBoxClass = expanded
     ? "max-h-[220px] overflow-y-auto pr-2"
     : "max-h-[128px] overflow-hidden";
-
+// h417
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_6px_12px_rgba(15,23,42,0.06)] h-full w-[340px] min-h-[380px] flex flex-col">
+    <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_6px_12px_rgba(15,23,42,0.06)] h-full w-[340px] min-h-[400px] flex flex-col"> 
       <StarsRow rating={item.rating} />
 
       {/* ส่วนข้อความ = โซนหลัก */}
       <div className="mt-4 flex-1 min-h-0">
-        <div className="font-semibold text-slate-900 line-clamp-2">
-          {headline}
-        </div>
+<div className="font-semibold text-slate-900 line-clamp-2">
+  {title}
+</div>
 
         <div
           className={cx(
@@ -151,7 +152,7 @@ function TestimonialCard({ item, expanded, onToggle }) {
       </div>
 
       {/* แถบโปรไฟล์อยู่ล่างสุดเสมอ */}
-      <div className="flex items-start gap-4 h-20">
+      <div className="mt-6 flex items-center gap-4 min-h-20">
         <Avatar name={reviewerName} url={item.avatarUrl} />
 
         <div className="min-w-0 flex-1">
@@ -167,7 +168,7 @@ function TestimonialCard({ item, expanded, onToggle }) {
           <InfoLine icon={Building2} text={company} />
 
           {/* 4) หลักสูตร (มี icon) */}
-          <InfoLine icon={GraduationCap} text={course} />
+          {/* <InfoLine icon={GraduationCap} text={course} /> */}
         </div>
       </div>
     </div>
