@@ -734,7 +734,7 @@ export default function ChatWidget() {
                   onClick={() => reset()}
                   className="cursor-pointer rounded-lg bg-white/15 px-3 py-1.5 text-xs font-semibold text-white ring-1 ring-white/20 hover:bg-white/20"
                 >
-                  ล้างแชต
+                  ล้างแชท
                 </button>
 
                 {/* Fullscreen desktop only */}
