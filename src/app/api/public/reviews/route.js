@@ -89,7 +89,6 @@ export async function GET(req) {
 
     const items = await Review.find({
       isActive: true,
-      status: "approved",
     })
       .sort({ pinnedAt: -1, createdAt: -1 })
       .limit(limit)
