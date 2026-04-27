@@ -20,10 +20,66 @@ function isValidId(id) {
   return mongoose.isValidObjectId(id);
 }
 
-// หน้าแรกดึงรีวิวที่ “เปิด Active” + “approved” เท่านั้น
+/* -------------------------------------------------------
+ * CORS
+ * ENV example:
+ * REVIEW_ALLOWED_ORIGINS=https://www.9experttraining.com,https://9experttraining.com,https://thenexthumansskills.com
+ * ----------------------------------------------------- */
+function normalizeOrigin(origin) {
+  return String(origin || "")
+    .trim()
+    .replace(/\/$/, "");
+}
+
+function getAllowedOrigins() {
+  return String(process.env.REVIEW_ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((x) => normalizeOrigin(x))
+    .filter(Boolean);
+}
+
+function getCorsHeaders(req) {
+  const origin = normalizeOrigin(req.headers.get("origin"));
+  const allowedOrigins = getAllowedOrigins();
+
+  const isAllowed = origin && allowedOrigins.includes(origin);
+
+  const headers = {
+    Vary: "Origin",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Max-Age": "86400",
+  };
+
+  if (isAllowed) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+
+  return headers;
+}
+
+function withCors(req, res) {
+  const headers = getCorsHeaders(req);
+
+  for (const [key, value] of Object.entries(headers)) {
+    res.headers.set(key, value);
+  }
+
+  return res;
+}
+
+export async function OPTIONS(req) {
+  return new Response(null, {
+    status: 204,
+    headers: getCorsHeaders(req),
+  });
+}
+
+// หน้าแรก / เว็บอื่น ดึงรีวิวที่ “เปิด Active” + “approved” เท่านั้น
 export async function GET(req) {
   try {
     await dbConnect();
+
     const { searchParams } = new URL(req.url);
 
     const limit = Math.min(
@@ -31,8 +87,11 @@ export async function GET(req) {
       Math.max(1, Number(searchParams.get("limit") || 12)),
     );
 
-    const items = await Review.find({ isActive: true })
-      .sort({ pinnedAt: -1, createdAt: -1 }) // ✅ Active ที่กดล่าสุดขึ้นก่อน
+    const items = await Review.find({
+      isActive: true,
+      status: "approved",
+    })
+      .sort({ pinnedAt: -1, createdAt: -1 })
       .limit(limit)
       .select({
         reviewerName: 1,
@@ -53,19 +112,24 @@ export async function GET(req) {
       })
       .lean();
 
-    return NextResponse.json({
-      ok: true,
-      items: items.map((x) => ({
-        ...x,
-        id: String(x._id),
-        // ✅ ส่ง reviewText กลางให้หน้าเว็บใช้ได้ง่าย
-        reviewText: clean(x.body || x.comment || ""),
-      })),
-    });
+    return withCors(
+      req,
+      NextResponse.json({
+        ok: true,
+        items: items.map((x) => ({
+          ...x,
+          id: String(x._id),
+          reviewText: clean(x.body || x.comment || ""),
+        })),
+      }),
+    );
   } catch (e) {
-    return NextResponse.json(
-      { ok: false, error: String(e?.message || "Load failed") },
-      { status: 500 },
+    return withCors(
+      req,
+      NextResponse.json(
+        { ok: false, error: String(e?.message || "Load failed") },
+        { status: 500 },
+      ),
     );
   }
 }
@@ -73,6 +137,7 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     await dbConnect();
+
     const body = await req.json().catch(() => ({}));
 
     const reviewerName = clean(body.reviewerName || body.fullName);
@@ -83,10 +148,9 @@ export async function POST(req) {
     const courseId = clean(body.courseId);
     const rating = Number(body.rating);
 
-    // ✅ ใหม่: ไม่ใช้ headline/title แล้ว
+    // ไม่ใช้ headline/title แล้ว
     const reviewText = clean(body.body || body.comment);
 
-    // ✅ FIX: ต้องประกาศให้ครบ (กัน ReferenceError)
     const avatarUrl = clean(body.avatarUrl);
     const avatarPublicId = clean(body.avatarPublicId);
 
@@ -121,6 +185,7 @@ export async function POST(req) {
     }
 
     const course = await Course.findById(courseId).select({ name: 1 }).lean();
+
     if (!course) {
       return NextResponse.json(
         { ok: false, error: "Course not found" },
@@ -140,14 +205,13 @@ export async function POST(req) {
 
       rating,
 
-      // ✅ ใหม่: เก็บไว้ที่ body เป็นหลัก
+      // เก็บไว้ที่ body เป็นหลัก
       body: reviewText,
 
-      // legacy: กันของเก่าพัง (admin list/search/export ยังอ่านได้)
+      // legacy: กันของเก่าพัง
       comment: reviewText,
       headline: "",
 
-      // รูป
       avatarUrl,
       avatarPublicId,
 
@@ -161,7 +225,10 @@ export async function POST(req) {
       status: "pending",
     });
 
-    return NextResponse.json({ ok: true, id: String(doc._id) });
+    return NextResponse.json({
+      ok: true,
+      id: String(doc._id),
+    });
   } catch (e) {
     return NextResponse.json(
       { ok: false, error: String(e?.message || "Submit failed") },
