@@ -12,9 +12,11 @@ export default function PublicFooter() {
           <div>
             <div className="mb-4 flex items-center gap-3">
               <div className="w-28 rounded-full bg-white px-3 ring-1 ring-white/10 mb-3">
-                <img
-                  src="https://res.cloudinary.com/ddva7xvdt/image/upload/v1770714090/logo-9experttraining-color_dtrifk.png"
+                <Image
+                  src="/logo-9expert.png"
                   alt="9Expert Training"
+                  width={112}
+                  height={40}
                   className="h-auto w-full"
                 />
               </div>

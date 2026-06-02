@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 function cx(...a) {
   return a.filter(Boolean).join(" ");
@@ -17,10 +18,12 @@ export default function PublicNavClient() {
       <div className="border-b border-slate-200 bg-white/70 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-3">
-            <img
-              src="https://res.cloudinary.com/ddva7xvdt/image/upload/v1770714090/logo-9experttraining-color_dtrifk.png"
+            <Image
+              src="/logo-9expert.png"
               alt="9Expert Training"
-              className="h-16 w-auto"
+              width={112}
+              height={40}
+              className="h-auto w-full"
             />
           </Link>
 
