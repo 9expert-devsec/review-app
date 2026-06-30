@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/cron/sync-courses?token=${CRON_SECRET}",
+      "path": "/api/cron/sync-courses",
       "schedule": "*/30 * * * *"
     }
   ]
