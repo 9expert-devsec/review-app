@@ -96,10 +96,25 @@ export async function syncCoursesFromUpstream() {
 
   const r = await Course.bulkWrite(ops, { ordered: false });
 
+  // Deactivate any course not seen in this sync run.
+  // Identify synced courses by sourceId, falling back to name when empty.
+  const syncedSourceIds = mapped.map((c) => c.sourceId).filter(Boolean);
+  const syncedNames = mapped.filter((c) => !c.sourceId).map((c) => c.name);
+
+  const deactivateRes = await Course.updateMany(
+    {
+      sourceId: { $nin: syncedSourceIds },
+      name: { $nin: syncedNames },
+      isActive: true,
+    },
+    { $set: { isActive: false } },
+  );
+
   return {
     upstreamCount: raw.length,
     parsedCount: mapped.length,
     upserted: r.upsertedCount || 0,
     modified: r.modifiedCount || 0,
+    deactivated: deactivateRes.modifiedCount || 0,
   };
 }
