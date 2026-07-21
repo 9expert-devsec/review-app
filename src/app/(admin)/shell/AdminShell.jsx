@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -126,10 +127,18 @@ export default function AdminShell({ children }) {
             <span className="text-sm">เมนู</span>
           </button>
 
-          <div className="flex items-baseline gap-1 text-sm font-extrabold tracking-tight">
-            <span className="text-brand-blue-bright">9Expert</span>
-            <span className="text-slate-400">·</span>
-            <span className="text-slate-700">{title}</span>
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo/9exp-stand.png"
+              alt="9Expert"
+              width={400}
+              height={400}
+              priority
+              className="size-7 object-contain"
+            />
+            <div className="flex items-baseline gap-1 text-sm font-extrabold tracking-tight">
+              <span className="text-slate-700">{title}</span>
+            </div>
           </div>
 
           <button
@@ -150,11 +159,11 @@ export default function AdminShell({ children }) {
         />
       )}
 
-      <div className="relative mx-auto flex w-full max-w-[1440px]">
+      <div className="relative flex w-full">
         {/* Sidebar */}
         <aside
           className={cx(
-            "fixed inset-y-0 left-0 z-50 w-[288px] transition-transform duration-300 ease-in-out md:sticky md:z-0 md:translate-x-0",
+            "fixed inset-y-0 left-0 z-50 w-[288px] transition-transform duration-300 ease-in-out md:sticky md:top-0 md:z-0 md:h-dvh md:translate-x-0",
             open ? "translate-x-0 shadow-2xl" : "-translate-x-full md:block",
           )}
         >
@@ -162,11 +171,16 @@ export default function AdminShell({ children }) {
             {/* Brand Header */}
             <div className="flex items-center justify-between border-b border-slate-200/70 px-5 py-5">
               <div className="flex items-center gap-3">
-                <div className="grid size-10 place-items-center rounded-2xl bg-brand-blue-bright text-base font-black text-white shadow-(--shadow-soft)">
-                  9
-                </div>
+                <Image
+                  src="/logo/9exp-stand.png"
+                  alt="9Expert"
+                  width={400}
+                  height={400}
+                  priority
+                  className="size-11 shrink-0 object-contain"
+                />
                 <div>
-                  <div className="text-lg font-black leading-none tracking-tight text-brand-navy">
+                  <div className="font-head text-lg font-extrabold leading-none tracking-tight text-brand-navy">
                     9<span className="text-brand-blue-bright">Expert</span>
                   </div>
                   <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
@@ -253,12 +267,12 @@ export default function AdminShell({ children }) {
         </aside>
 
         {/* Main Content Area */}
-        <div className="flex min-h-screen flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
           {/* Desktop Topbar */}
           <header className="sticky top-0 z-30 hidden w-full border-b border-slate-200/70 bg-white/85 backdrop-blur md:block">
             <div className="flex items-center justify-between px-8 py-5">
               <div>
-                <div className="text-xl font-extrabold tracking-tight text-brand-navy">
+                <div className="font-head text-xl font-extrabold tracking-tight text-brand-navy">
                   {title}
                 </div>
                 <div className="mt-1 flex items-center gap-2">
@@ -290,9 +304,9 @@ export default function AdminShell({ children }) {
           </header>
 
           {/* Main Slot */}
-          <main className="flex-1 overflow-auto p-4 md:p-8 lg:p-10">
-            <div className="mx-auto max-w-6xl">
-              <div className="min-h-[calc(100vh-12rem)] rounded-3xl border border-slate-200/70 bg-white p-5 shadow-(--shadow-soft-lg) transition-all md:p-8 lg:p-10">
+          <main className="flex-1 p-4 md:p-8 lg:p-10 2xl:px-16">
+            <div className="mx-auto w-full max-w-400">
+              <div className="min-h-[calc(100dvh-12rem)] rounded-3xl border border-slate-200/70 bg-white p-5 shadow-(--shadow-soft-lg) transition-all md:p-8 lg:p-10">
                 {children}
               </div>
             </div>

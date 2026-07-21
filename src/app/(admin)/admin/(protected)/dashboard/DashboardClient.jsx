@@ -54,7 +54,7 @@ function StatCard({ icon, label, value, hint, accent }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-medium text-slate-500">{label}</div>
-          <div className="mt-2 text-3xl font-extrabold tracking-tight text-brand-navy">
+          <div className="mt-2 font-head text-3xl font-extrabold tracking-tight text-brand-navy">
             {value}
           </div>
           {hint ? (
@@ -71,7 +71,7 @@ function SectionCard({ title, right, children }) {
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-base font-semibold text-brand-navy">
+        <div className="font-head text-base font-semibold text-brand-navy">
           {title}
         </div>
         {right ? <div className="shrink-0">{right}</div> : null}
@@ -173,7 +173,7 @@ export default function DashboardClient() {
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <div className="text-2xl font-extrabold tracking-tight text-brand-navy">
+          <div className="font-head text-2xl font-extrabold tracking-tight text-brand-navy">
             Dashboard
           </div>
           <div className="mt-1 text-sm text-slate-500">
@@ -309,19 +309,22 @@ export default function DashboardClient() {
               }
             >
               {perCourse.length === 0 ? (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-brand-ice p-8 text-center text-sm text-slate-500">
                   ยังไม่มีข้อมูลรีวิวแยกตามคอร์ส
                 </div>
               ) : (
                 <div className="overflow-hidden rounded-2xl border border-slate-200">
-                  <div className="grid grid-cols-12 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-600">
-                    <div className="col-span-7">Course</div>
-                    <div className="col-span-2 text-right">Reviews</div>
-                    <div className="col-span-1 text-right">Active</div>
-                    <div className="col-span-2 text-right">Avg</div>
+                  {/* Header (desktop only — mobile uses inline labels) */}
+                  <div className="hidden items-center gap-3 bg-brand-ice px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide text-slate-500 sm:flex">
+                    <div className="flex-1">Course</div>
+                    <div className="grid w-56 grid-cols-3 text-right">
+                      <div>Reviews</div>
+                      <div>Active</div>
+                      <div>Avg</div>
+                    </div>
                   </div>
 
-                  <div className="divide-y">
+                  <div className="divide-y divide-slate-100">
                     {perCourse.slice(0, 10).map((c) => {
                       const reviewCount = Number(c?.reviewCount || 0);
                       const activeCount = Number(c?.activeCount || 0);
@@ -335,34 +338,54 @@ export default function DashboardClient() {
                       return (
                         <div
                           key={String(c.courseId)}
-                          className="grid grid-cols-12 gap-3 px-4 py-3 text-sm"
+                          className="flex flex-col gap-3 px-4 py-3.5 transition-colors hover:bg-brand-ice sm:flex-row sm:items-center"
                         >
-                          <div className="col-span-12 md:col-span-7">
-                            <div className="font-semibold text-slate-900 line-clamp-1">
+                          {/* Course name + active-ratio bar */}
+                          <div className="min-w-0 flex-1">
+                            <div
+                              className="truncate font-head text-sm font-semibold text-brand-navy"
+                              title={c.courseName || "-"}
+                            >
                               {c.courseName || "-"}
                             </div>
-                            <div className="mt-1">
-                              <div className="h-2 w-full rounded-full bg-slate-100">
+                            <div className="mt-2 flex items-center gap-2">
+                              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
                                 <div
-                                  className="h-2 rounded-full bg-brand-blue-bright"
+                                  className="h-full rounded-full bg-brand-blue-bright"
                                   style={{ width: `${activeP}%` }}
                                 />
                               </div>
-                              <div className="mt-1 text-xs text-slate-500">
-                                Active {nfmt(activeCount)} / {nfmt(reviewCount)}{" "}
-                                ({activeP}%)
-                              </div>
+                              <span className="shrink-0 text-[11px] font-medium text-slate-500">
+                                Active {nfmt(activeCount)}/{nfmt(reviewCount)} (
+                                {activeP}%)
+                              </span>
                             </div>
                           </div>
 
-                          <div className="col-span-4 md:col-span-2 text-right font-semibold text-slate-900">
-                            {nfmt(reviewCount)}
-                          </div>
-                          <div className="col-span-4 md:col-span-1 text-right text-slate-700">
-                            {nfmt(activeCount)}
-                          </div>
-                          <div className="col-span-4 md:col-span-2 text-right font-semibold text-slate-900">
-                            {fmt(avgRating)}
+                          {/* Stats cluster */}
+                          <div className="grid w-full grid-cols-3 items-center gap-2 sm:w-56">
+                            <div className="text-center sm:text-right">
+                              <div className="text-sm font-bold text-brand-navy">
+                                {nfmt(reviewCount)}
+                              </div>
+                              <div className="text-[10px] font-medium text-slate-400 sm:hidden">
+                                Reviews
+                              </div>
+                            </div>
+                            <div className="text-center sm:text-right">
+                              <div className="text-sm font-semibold text-slate-700">
+                                {nfmt(activeCount)}
+                              </div>
+                              <div className="text-[10px] font-medium text-slate-400 sm:hidden">
+                                Active
+                              </div>
+                            </div>
+                            <div className="flex justify-center sm:justify-end">
+                              <span className="badge badge-active">
+                                <Star className="size-3" strokeWidth={2.5} />
+                                {fmt(avgRating)}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       );

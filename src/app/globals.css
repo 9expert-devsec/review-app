@@ -41,7 +41,10 @@
   --color-brand-navy: var(--brand-navy);
   --color-brand-ice: var(--brand-ice);
 
-  --font-sans: "Google Sans", "Noto Sans Thai", system-ui, -apple-system,
+  /* Body = Google Sans (--font-body), Heading = LINE Seed Sans TH (--font-heading) */
+  --font-sans: var(--font-body), "Noto Sans Thai", system-ui, -apple-system,
+    "Segoe UI", Roboto, Arial, sans-serif;
+  --font-head: var(--font-heading), "Noto Sans Thai", system-ui, -apple-system,
     "Segoe UI", Roboto, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
@@ -55,6 +58,19 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+/* Headings use the LINE Seed Sans TH display face */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-head);
+}
+
+/* Opt-in heading font for non-semantic title elements (divs used as titles) */
+.font-head {
+  font-family: var(--font-head);
 }
 
 /* ✅ เด้งขึ้นลงเบาๆ (สำหรับปุ่มเลื่อนลง) */

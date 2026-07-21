@@ -277,7 +277,7 @@ export default function ReviewsListClient() {
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <div className="text-2xl font-extrabold tracking-tight text-brand-navy">
+          <div className="font-head text-2xl font-extrabold tracking-tight text-brand-navy">
             Reviews
           </div>
           <div className="mt-1 text-sm text-slate-500">
