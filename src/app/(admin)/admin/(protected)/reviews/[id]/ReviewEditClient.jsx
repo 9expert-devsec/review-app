@@ -315,11 +315,10 @@ export default function ReviewEditClient({ id }) {
     if (!courseId) return false;
     if (!clean(reviewerName)) return false;
     if (!clean(reviewerEmail)) return false;
-    if (!clean(headline)) return false;
     const r = Number(rating);
     if (!Number.isFinite(r) || r < 1 || r > 5) return false;
     return true;
-  }, [courseId, reviewerName, reviewerEmail, headline, rating]);
+  }, [courseId, reviewerName, reviewerEmail, rating]);
 
   const avatarUrlCurrent = clean(item?.avatarUrl) || "";
   const avatarPublicIdCurrent = clean(item?.avatarPublicId) || "";
@@ -832,7 +831,7 @@ export default function ReviewEditClient({ id }) {
                 </div>
 
                 <div className="md:col-span-2">
-                  <Field label="หัวข้อรีวิว" required>
+                  <Field label="หัวข้อรีวิว">
                     <input
                       className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
                       value={headline}
