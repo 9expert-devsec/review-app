@@ -23,6 +23,10 @@ function isValidId(id) {
   return mongoose.isValidObjectId(id);
 }
 
+// NOTE: ต้องตั้งค่า CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET
+// ให้ครบทั้งใน .env.local (dev) และใน Vercel Project Settings (prod)
+// ถ้าตัวใดตัวหนึ่งหาย ฟังก์ชันนี้จะ throw "Missing Cloudinary env" ทำให้การ
+// อัปโหลด/ลบ avatar พังด้วย 500 (อย่า log ค่า secret ออกมา)
 function ensureCloudinaryEnv() {
   const cloud_name = clean(process.env.CLOUDINARY_CLOUD_NAME);
   const api_key = clean(process.env.CLOUDINARY_API_KEY);
@@ -109,9 +113,10 @@ export async function PUT(req, ctx) {
       patch.reviewerRole = clean(body.reviewerRole);
 
     // ✅ ใหม่: เก็บรีวิวไว้ที่ body เป็นหลัก (และ sync comment เพื่อ legacy)
+    // หมายเหตุ: comment/body ไม่ใช่ฟิลด์บังคับ (schema default "") จึงอนุญาตให้ว่างได้
+    // ใช้ nullish coalescing เพื่อคง empty string ที่ตั้งใจส่งมา
     if (body.body !== undefined || body.comment !== undefined) {
-      const nextText = clean(body.body ?? body.comment);
-      if (!nextText) return bad("body required", 400);
+      const nextText = clean(body.body ?? body.comment ?? "");
       patch.body = nextText;
       patch.comment = nextText; // legacy compatibility
     }

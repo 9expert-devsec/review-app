@@ -522,6 +522,9 @@ export default function ReviewEditClient({ id }) {
   }
 
   async function save() {
+    // ติดตามว่าเพิ่งอัปโหลดรูปใหม่ในรอบนี้หรือไม่ เพื่อแจ้ง error ให้ชัดเจน
+    // ถ้า PUT ล้มเหลวหลังอัปโหลดรูปสำเร็จ (รูปจะค้างบน Cloudinary แต่ DB ไม่อัปเดต)
+    let uploadedThisSave = false;
     try {
       setSaving(true);
       setErr("");
@@ -556,6 +559,7 @@ export default function ReviewEditClient({ id }) {
         const up = await uploadAvatar(avatarFile);
         payload.avatarUrl = clean(up.url);
         payload.avatarPublicId = clean(up.publicId);
+        uploadedThisSave = true;
       }
 
       const r = await fetch(`/api/admin/reviews/${id}`, {
@@ -565,7 +569,16 @@ export default function ReviewEditClient({ id }) {
       });
 
       const j = await r.json().catch(() => ({}));
-      if (!j.ok) throw new Error(j.error || "Save failed");
+      if (!j.ok) {
+        // รูปอัปโหลดขึ้น Cloudinary แล้วแต่บันทึกลง DB ไม่สำเร็จ
+        // ไม่ลบรูปอัตโนมัติ (ให้ผู้ใช้กดบันทึกซ้ำได้) แต่แจ้งให้ชัดเจน
+        if (uploadedThisSave) {
+          throw new Error(
+            `${j.error || "Save failed"} — อัปโหลดรูปสำเร็จแต่บันทึกข้อมูลไม่สำเร็จ กรุณากดบันทึกอีกครั้ง`,
+          );
+        }
+        throw new Error(j.error || "Save failed");
+      }
 
       setItem(j.item);
 
