@@ -906,7 +906,7 @@ export default function ReviewEditClient({ id }) {
                       ยกเลิก
                     </Link>
                     <button
-                      disabled={!canSave || saving || avatarBusy}
+                      disabled={!canSave || !dirty || saving || avatarBusy}
                       onClick={save}
                       className="rounded-2xl bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                     >
