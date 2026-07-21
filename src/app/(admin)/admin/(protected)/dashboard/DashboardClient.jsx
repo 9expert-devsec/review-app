@@ -2,6 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  Sigma,
+  CheckCircle2,
+  Star,
+  RefreshCw,
+  ArrowRight,
+} from "lucide-react";
 
 function cx(...a) {
   return a.filter(Boolean).join(" ");
@@ -26,28 +33,35 @@ function pct(n, total) {
   return Math.max(0, Math.min(100, (a / t) * 100));
 }
 
-function IconPill({ children }) {
+function IconPill({ children, accent }) {
   return (
-    <div className="grid size-10 place-items-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700">
-      <span className="text-sm font-semibold">{children}</span>
+    <div
+      className={cx(
+        "grid size-11 place-items-center rounded-2xl",
+        accent === "lime"
+          ? "bg-brand-lime text-brand-navy"
+          : "bg-(--brand-blue-bright)/10 text-brand-blue",
+      )}
+    >
+      {children}
     </div>
   );
 }
 
-function StatCard({ icon, label, value, hint }) {
+function StatCard({ icon, label, value, hint, accent }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="card p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-medium text-slate-500">{label}</div>
-          <div className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
+          <div className="mt-2 text-3xl font-extrabold tracking-tight text-brand-navy">
             {value}
           </div>
           {hint ? (
             <div className="mt-1 text-xs text-slate-500">{hint}</div>
           ) : null}
         </div>
-        <IconPill>{icon}</IconPill>
+        <IconPill accent={accent}>{icon}</IconPill>
       </div>
     </div>
   );
@@ -55,9 +69,11 @@ function StatCard({ icon, label, value, hint }) {
 
 function SectionCard({ title, right, children }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="card p-5">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-base font-semibold text-slate-900">{title}</div>
+        <div className="text-base font-semibold text-brand-navy">
+          {title}
+        </div>
         {right ? <div className="shrink-0">{right}</div> : null}
       </div>
       <div className="mt-4">{children}</div>
@@ -157,7 +173,7 @@ export default function DashboardClient() {
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <div className="text-2xl font-extrabold tracking-tight text-slate-900">
+          <div className="text-2xl font-extrabold tracking-tight text-brand-navy">
             Dashboard
           </div>
           <div className="mt-1 text-sm text-slate-500">
@@ -176,28 +192,20 @@ export default function DashboardClient() {
           <button
             onClick={load}
             disabled={loading}
-            className={cx(
-              "rounded-2xl border px-4 py-2 text-sm font-semibold transition",
-              loading
-                ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                : "border-slate-200 bg-white hover:bg-slate-50 text-slate-800",
-            )}
+            className="btn-ghost disabled:cursor-not-allowed disabled:opacity-50"
           >
-            ⟳ Refresh
+            <RefreshCw className={cx("size-4", loading && "animate-spin")} />
+            Refresh
           </button>
 
-          <Link
-            href="/admin/reviews"
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-          >
+          <Link href="/admin/reviews" className="btn-ghost">
             ไปหน้า Reviews
+            <ArrowRight className="size-4" />
           </Link>
 
-          <Link
-            href="/admin/reports"
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-          >
+          <Link href="/admin/reports" className="btn-ghost">
             ไปหน้า Reports
+            <ArrowRight className="size-4" />
           </Link>
         </div>
       </div>
@@ -221,19 +229,20 @@ export default function DashboardClient() {
           {/* Stats */}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <StatCard
-              icon="Σ"
+              icon={<Sigma className="size-5" strokeWidth={2.4} />}
               label="Total Reviews"
               value={nfmt(totals.totalReviews)}
               hint="รวมทั้งหมดในระบบ"
             />
             <StatCard
-              icon="✓"
+              icon={<CheckCircle2 className="size-5" strokeWidth={2.4} />}
               label="Active Reviews"
               value={nfmt(totals.activeReviews)}
               hint="ที่เปิดแสดงหน้าเว็บ"
+              accent="lime"
             />
             <StatCard
-              icon="★"
+              icon={<Star className="size-5" strokeWidth={2.4} />}
               label="Average Rating"
               value={fmt(totals.avgRating)}
               hint="เฉลี่ยจากรีวิวทั้งหมด"
@@ -274,7 +283,7 @@ export default function DashboardClient() {
                         <div className="flex-1">
                           <div className="h-2 w-full rounded-full bg-slate-100">
                             <div
-                              className="h-2 rounded-full bg-slate-900"
+                              className="h-2 rounded-full bg-brand-blue-bright"
                               style={{ width: `${width}%` }}
                             />
                           </div>
@@ -335,7 +344,7 @@ export default function DashboardClient() {
                             <div className="mt-1">
                               <div className="h-2 w-full rounded-full bg-slate-100">
                                 <div
-                                  className="h-2 rounded-full bg-slate-900"
+                                  className="h-2 rounded-full bg-brand-blue-bright"
                                   style={{ width: `${activeP}%` }}
                                 />
                               </div>
