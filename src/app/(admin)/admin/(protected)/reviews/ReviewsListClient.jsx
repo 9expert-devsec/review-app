@@ -2,6 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  RefreshCw,
+  FileDown,
+  Eye,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  SlidersHorizontal,
+} from "lucide-react";
 
 function cx(...a) {
   return a.filter(Boolean).join(" ");
@@ -29,20 +40,8 @@ function stars(rating) {
 
 function Badge({ on }) {
   return (
-    <span
-      className={cx(
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold",
-        on
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-          : "border-slate-200 bg-slate-50 text-slate-600",
-      )}
-    >
-      <span
-        className={cx(
-          "size-2 rounded-full",
-          on ? "bg-emerald-500" : "bg-slate-400",
-        )}
-      />
+    <span className={cx("badge", on ? "badge-active" : "badge-muted")}>
+      <span className="badge-dot" />
       {on ? "Active" : "Off"}
     </span>
   );
@@ -57,12 +56,12 @@ function Modal({ open, onClose, item }) {
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="absolute left-1/2 top-1/2 w-[92vw] max-w-2xl -translate-x-1/2 -translate-y-1/2">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xl">
+      <div className="absolute left-1/2 top-1/2 max-h-[90vh] w-[92vw] max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto">
+        <div className="card p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="text-sm text-slate-500">Preview Review</div>
-              <div className="mt-1 text-lg font-extrabold tracking-tight text-slate-900 line-clamp-2">
+              <div className="mt-1 text-lg font-extrabold tracking-tight text-brand-navy line-clamp-2">
                 {item.headline || item.title || "-"}
               </div>
               <div className="mt-1 text-sm text-slate-600">
@@ -71,9 +70,10 @@ function Modal({ open, onClose, item }) {
             </div>
             <button
               onClick={onClose}
-              className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50"
+              aria-label="ปิด"
+              className="grid size-9 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:bg-slate-50"
             >
-              ปิด
+              <X className="size-4.5" />
             </button>
           </div>
 
@@ -117,16 +117,11 @@ function Modal({ open, onClose, item }) {
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
-            <Link
-              href={`/admin/reviews/${item._id}`}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-            >
+            <Link href={`/admin/reviews/${item._id}`} className="btn-ghost">
+              <Pencil className="size-4" />
               แก้ไข
             </Link>
-            <button
-              onClick={onClose}
-              className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-            >
+            <button onClick={onClose} className="btn-primary">
               เสร็จสิ้น
             </button>
           </div>
@@ -282,7 +277,7 @@ export default function ReviewsListClient() {
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <div className="text-2xl font-extrabold tracking-tight text-slate-900">
+          <div className="text-2xl font-extrabold tracking-tight text-brand-navy">
             Reviews
           </div>
           <div className="mt-1 text-sm text-slate-500">
@@ -299,20 +294,14 @@ export default function ReviewsListClient() {
           <button
             onClick={load}
             disabled={loading}
-            className={cx(
-              "rounded-2xl border px-4 py-2 text-sm font-semibold transition",
-              loading
-                ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                : "border-slate-200 bg-white hover:bg-slate-50 text-slate-800",
-            )}
+            className="btn-ghost disabled:cursor-not-allowed disabled:opacity-50"
           >
-            ⟳ Refresh
+            <RefreshCw className={cx("size-4", loading && "animate-spin")} />
+            Refresh
           </button>
 
-          <Link
-            href="/admin/reports"
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-          >
+          <Link href="/admin/reports" className="btn-ghost">
+            <FileDown className="size-4" />
             ไปหน้า Export
           </Link>
         </div>
@@ -326,20 +315,17 @@ export default function ReviewsListClient() {
       )}
 
       {/* Filters */}
-      <div className="mt-6 rounded-3xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-5 shadow-sm">
+      <div className="card mt-6 p-5">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-sm font-semibold text-slate-900">Filters</div>
+          <div className="flex items-center gap-2 text-sm font-semibold text-brand-navy">
+            <SlidersHorizontal className="size-4 text-brand-blue" />
+            Filters
+          </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={clearFilters}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-            >
+            <button onClick={clearFilters} className="btn-ghost">
               Clear
             </button>
-            <button
-              onClick={applyFilters}
-              className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-            >
+            <button onClick={applyFilters} className="btn-primary">
               Apply
             </button>
           </div>
@@ -349,7 +335,7 @@ export default function ReviewsListClient() {
           <div className="md:col-span-4">
             <div className="text-xs font-semibold text-slate-600">Course</div>
             <select
-              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+              className="input mt-1"
               value={courseIdUI}
               onChange={(e) => setCourseIdUI(e.target.value)}
             >
@@ -368,7 +354,7 @@ export default function ReviewsListClient() {
           <div className="md:col-span-2">
             <div className="text-xs font-semibold text-slate-600">Active</div>
             <select
-              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+              className="input mt-1"
               value={activeUI}
               onChange={(e) => setActiveUI(e.target.value)}
             >
@@ -381,7 +367,7 @@ export default function ReviewsListClient() {
           <div className="md:col-span-6">
             <div className="text-xs font-semibold text-slate-600">Search</div>
             <input
-              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+              className="input mt-1"
               placeholder="ชื่อ/อีเมล/หัวข้อ/คำติชม"
               value={qUI}
               onChange={(e) => setQUI(e.target.value)}
@@ -397,7 +383,7 @@ export default function ReviewsListClient() {
           <div className="md:col-span-3">
             <div className="text-xs font-semibold text-slate-600">From</div>
             <input
-              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+              className="input mt-1"
               type="date"
               value={fromUI}
               onChange={(e) => setFromUI(e.target.value)}
@@ -407,7 +393,7 @@ export default function ReviewsListClient() {
           <div className="md:col-span-3">
             <div className="text-xs font-semibold text-slate-600">To</div>
             <input
-              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+              className="input mt-1"
               type="date"
               value={toUI}
               onChange={(e) => setToUI(e.target.value)}
@@ -415,7 +401,7 @@ export default function ReviewsListClient() {
           </div>
 
           <div className="md:col-span-6 flex items-end gap-2">
-            <div className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+            <div className="flex-1 rounded-xl border border-slate-200 bg-brand-ice px-4 py-3">
               <div className="text-xs font-semibold text-slate-600">Result</div>
               <div className="mt-1 text-sm text-slate-700">
                 {nfmt(total)} รายการ • หน้า {page}/{pageCount}
@@ -426,8 +412,9 @@ export default function ReviewsListClient() {
       </div>
 
       {/* Table */}
-      <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="grid grid-cols-12 gap-2 border-b bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-600">
+      <div className="card mt-6 overflow-hidden">
+        {/* Desktop column header */}
+        <div className="hidden grid-cols-12 gap-2 border-b border-slate-200 bg-brand-ice px-4 py-3 text-xs font-semibold text-slate-600 md:grid">
           <div className="col-span-1">วันที่</div>
           <div className="col-span-3">หลักสูตร</div>
           <div className="col-span-2">ผู้รีวิว</div>
@@ -441,7 +428,7 @@ export default function ReviewsListClient() {
           <div className="p-5 text-slate-500">Loading...</div>
         ) : items.length === 0 ? (
           <div className="p-6">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-brand-ice p-8 text-center text-sm text-slate-500">
               ไม่พบรีวิวตามเงื่อนไขที่เลือก
             </div>
           </div>
@@ -449,77 +436,154 @@ export default function ReviewsListClient() {
           items.map((it) => (
             <div
               key={it._id}
-              className="grid grid-cols-12 gap-2 border-b px-4 py-3 text-sm last:border-b-0 hover:bg-slate-50/60"
+              className="border-b border-slate-100 last:border-b-0 transition-colors hover:bg-brand-ice"
             >
-              <div className="col-span-1 text-slate-600">
-                {formatBKK(it.createdAt)}
+              {/* ---------- Mobile card ---------- */}
+              <div className="flex flex-col gap-3 p-4 md:hidden">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-bold text-brand-navy line-clamp-1">
+                      {it.reviewerName || "-"}
+                    </div>
+                    <div className="mt-0.5 text-xs text-slate-500 line-clamp-1">
+                      {it.reviewerEmail || ""}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => toggleActive(it._id, !it.isActive)}
+                    className="shrink-0 transition-all active:scale-95"
+                    title="กดเพื่อสลับสถานะ Active/Off"
+                  >
+                    <Badge on={!!it.isActive} />
+                  </button>
+                </div>
+
+                <div className="rounded-xl bg-brand-ice p-3">
+                  <div className="text-sm font-semibold text-brand-navy line-clamp-1">
+                    {it.courseName || "-"}
+                  </div>
+                  <div className="mt-1 flex items-center gap-2 text-xs">
+                    <span className="font-semibold text-brand-blue">
+                      {Number(it.rating || 0)}
+                    </span>
+                    <span className="text-slate-500">{stars(it.rating)}</span>
+                    {it.reviewerCompany ? (
+                      <span className="truncate text-slate-400">
+                        • {it.reviewerCompany}
+                      </span>
+                    ) : null}
+                  </div>
+                  {it.headline ? (
+                    <div className="mt-2 text-sm font-medium text-slate-700 line-clamp-2">
+                      {it.headline}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-slate-400">
+                    {formatBKK(it.createdAt)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="btn-ghost min-h-9! px-3! text-xs!"
+                      onClick={() => setPreview(it)}
+                    >
+                      <Eye className="size-4" />
+                      ดู
+                    </button>
+                    <Link
+                      className="btn-ghost min-h-9! px-3! text-xs!"
+                      href={`/admin/reviews/${it._id}`}
+                    >
+                      <Pencil className="size-4" />
+                      แก้ไข
+                    </Link>
+                    <button
+                      className="btn-danger min-h-9! px-3! text-xs!"
+                      onClick={() => remove(it._id)}
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <div className="col-span-3">
-                <div className="font-semibold text-slate-900 line-clamp-1">
-                  {it.courseName || "-"}
+              {/* ---------- Desktop grid row ---------- */}
+              <div className="hidden grid-cols-12 gap-2 px-4 py-3 text-sm md:grid">
+                <div className="col-span-1 text-slate-600">
+                  {formatBKK(it.createdAt)}
                 </div>
-                <div className="mt-1 text-xs text-slate-500 line-clamp-1">
-                  {it.reviewerCompany || ""}
-                </div>
-              </div>
 
-              <div className="col-span-2">
-                <div className="font-semibold text-slate-900 line-clamp-1">
-                  {it.reviewerName || "-"}
+                <div className="col-span-3">
+                  <div className="font-semibold text-brand-navy line-clamp-1">
+                    {it.courseName || "-"}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500 line-clamp-1">
+                    {it.reviewerCompany || ""}
+                  </div>
                 </div>
-                <div className="mt-1 text-xs text-slate-500 line-clamp-1">
-                  {it.reviewerEmail || ""}
-                </div>
-              </div>
 
-              <div className="col-span-1 text-center">
-                <div className="font-extrabold text-slate-900">
-                  {Number(it.rating || 0)}
+                <div className="col-span-2">
+                  <div className="font-semibold text-brand-navy line-clamp-1">
+                    {it.reviewerName || "-"}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500 line-clamp-1">
+                    {it.reviewerEmail || ""}
+                  </div>
                 </div>
-                <div className="text-xs font-semibold text-slate-600">
-                  {stars(it.rating)}
-                </div>
-              </div>
 
-              <div className="col-span-2">
-                <div className="font-semibold text-slate-900 line-clamp-1">
-                  {it.headline || "-"}
+                <div className="col-span-1 text-center">
+                  <div className="font-extrabold text-brand-blue">
+                    {Number(it.rating || 0)}
+                  </div>
+                  <div className="text-xs font-semibold text-slate-500">
+                    {stars(it.rating)}
+                  </div>
                 </div>
-                <div className="mt-1 text-xs text-slate-500 line-clamp-1">
-                  {it.comment || ""}
+
+                <div className="col-span-2">
+                  <div className="font-semibold text-brand-navy line-clamp-1">
+                    {it.headline || "-"}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500 line-clamp-1">
+                    {it.comment || ""}
+                  </div>
                 </div>
-              </div>
 
-              <div className="col-span-1 flex items-center justify-center">
-                <button
-                  onClick={() => toggleActive(it._id, !it.isActive)}
-                  className="hover:opacity-90"
-                  title="กดเพื่อสลับสถานะ Active/Off"
-                >
-                  <Badge on={!!it.isActive} />
-                </button>
-              </div>
+                <div className="col-span-1 flex items-center justify-center">
+                  <button
+                    onClick={() => toggleActive(it._id, !it.isActive)}
+                    className="transition-all hover:opacity-90 active:scale-95"
+                    title="กดเพื่อสลับสถานะ Active/Off"
+                  >
+                    <Badge on={!!it.isActive} />
+                  </button>
+                </div>
 
-              <div className="col-span-2 flex items-center justify-end gap-2">
-                <button
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50"
-                  onClick={() => setPreview(it)}
-                >
-                  ดู
-                </button>
-                <Link
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50"
-                  href={`/admin/reviews/${it._id}`}
-                >
-                  แก้ไข
-                </Link>
-                <button
-                  className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
-                  onClick={() => remove(it._id)}
-                >
-                  ลบ
-                </button>
+                <div className="col-span-2 flex items-center justify-end gap-2">
+                  <button
+                    className="grid size-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-all hover:bg-slate-50 hover:text-brand-blue"
+                    onClick={() => setPreview(it)}
+                    title="ดู"
+                  >
+                    <Eye className="size-4" />
+                  </button>
+                  <Link
+                    className="grid size-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-all hover:bg-slate-50 hover:text-brand-blue"
+                    href={`/admin/reviews/${it._id}`}
+                    title="แก้ไข"
+                  >
+                    <Pencil className="size-4" />
+                  </Link>
+                  <button
+                    className="grid size-9 place-items-center rounded-xl border border-red-200 bg-red-50 text-red-600 transition-all hover:bg-red-100"
+                    onClick={() => remove(it._id)}
+                    title="ลบ"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -536,16 +600,18 @@ export default function ReviewsListClient() {
           <button
             disabled={page <= 1 || loading}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+            className="btn-ghost disabled:opacity-50"
           >
+            <ChevronLeft className="size-4" />
             ก่อนหน้า
           </button>
           <button
             disabled={page >= pageCount || loading}
             onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+            className="btn-ghost disabled:opacity-50"
           >
             ถัดไป
+            <ChevronRight className="size-4" />
           </button>
         </div>
       </div>

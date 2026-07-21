@@ -3,6 +3,16 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import {
+  LayoutDashboard,
+  Star,
+  FileDown,
+  ExternalLink,
+  LogOut,
+  Menu,
+  X,
+  Lightbulb,
+} from "lucide-react";
 
 // Utility สำหรับรวม Class Tailwind
 function cx(...a) {
@@ -23,24 +33,26 @@ function pageTitleFromPath(pathname) {
 }
 
 // ส่วนแสดง Icon เมนู
+const NAV_ICONS = {
+  dashboard: LayoutDashboard,
+  reviews: Star,
+  reports: FileDown,
+};
+
 function Icon({ name, active }) {
-  const base = cx(
-    "grid place-items-center rounded-xl border text-xs font-semibold transition-all",
-    active
-      ? "border-white/20 bg-white/10 text-white shadow-inner"
-      : "border-slate-200 bg-white text-slate-700 shadow-sm",
+  const Glyph = NAV_ICONS[name] || LayoutDashboard;
+  return (
+    <div
+      className={cx(
+        "grid size-9 shrink-0 place-items-center rounded-xl border transition-all",
+        active
+          ? "border-white/25 bg-white/15 text-white"
+          : "border-slate-200 bg-white text-brand-blue shadow-sm group-hover:border-(--brand-sky)/40",
+      )}
+    >
+      <Glyph className="size-4.5" strokeWidth={2.2} />
+    </div>
   );
-
-  const glyph =
-    name === "dashboard"
-      ? "⌁"
-      : name === "reviews"
-        ? "★"
-        : name === "reports"
-          ? "⇩"
-          : "•";
-
-  return <div className={cx("size-9", base)}>{glyph}</div>;
 }
 
 export default function AdminShell({ children }) {
@@ -101,24 +113,31 @@ export default function AdminShell({ children }) {
   }
 
   return (
-    <div className="flex min-h-dvh bg-slate-50 text-slate-900 selection:bg-slate-900 selection:text-white">
+    <div className="flex min-h-dvh bg-brand-ice text-brand-navy selection:bg-brand-blue selection:text-white">
       {/* Mobile Topbar */}
-      <div className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur md:hidden">
+      <div className="sticky top-0 z-40 w-full border-b border-slate-200/70 bg-white/85 backdrop-blur md:hidden">
         <div className="flex items-center justify-between px-4 py-3">
           <button
             onClick={() => setOpen(true)}
-            className="rounded-xl border bg-white px-3 py-2 text-sm font-medium transition-all hover:bg-slate-50 active:scale-95"
+            aria-label="เปิดเมนู"
+            className="btn-ghost min-h-10! px-3!"
           >
-            ☰ เมนู
+            <Menu className="size-4.5" />
+            <span className="text-sm">เมนู</span>
           </button>
 
-          <div className="text-sm font-bold tracking-tight">{title}</div>
+          <div className="flex items-baseline gap-1 text-sm font-extrabold tracking-tight">
+            <span className="text-brand-blue-bright">9Expert</span>
+            <span className="text-slate-400">·</span>
+            <span className="text-slate-700">{title}</span>
+          </div>
 
           <button
             onClick={logout}
-            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition-all hover:bg-red-100 active:scale-95"
+            aria-label="ออกจากระบบ"
+            className="btn-danger min-h-10! px-3!"
           >
-            Logout
+            <LogOut className="size-4.5" />
           </button>
         </div>
       </div>
@@ -126,7 +145,7 @@ export default function AdminShell({ children }) {
       {/* Mobile Drawer Overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-50 bg-(--brand-navy)/40 backdrop-blur-sm md:hidden"
           onClick={() => setOpen(false)}
         />
       )}
@@ -139,23 +158,29 @@ export default function AdminShell({ children }) {
             open ? "translate-x-0 shadow-2xl" : "-translate-x-full md:block",
           )}
         >
-          <div className="flex h-full flex-col border-r bg-white">
+          <div className="flex h-full flex-col border-r border-slate-200/70 bg-white">
             {/* Brand Header */}
-            <div className="flex items-center justify-between border-b px-5 py-5">
-              <div>
-                <div className="text-xl font-black tracking-tighter text-slate-900">
-                  ADMIN <span className="text-slate-400">PANEL</span>
+            <div className="flex items-center justify-between border-b border-slate-200/70 px-5 py-5">
+              <div className="flex items-center gap-3">
+                <div className="grid size-10 place-items-center rounded-2xl bg-brand-blue-bright text-base font-black text-white shadow-(--shadow-soft)">
+                  9
                 </div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  Management Console
+                <div>
+                  <div className="text-lg font-black leading-none tracking-tight text-brand-navy">
+                    9<span className="text-brand-blue-bright">Expert</span>
+                  </div>
+                  <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                    Review System
+                  </div>
                 </div>
               </div>
 
               <button
                 onClick={() => setOpen(false)}
-                className="rounded-xl border bg-white px-3 py-2 text-sm hover:bg-slate-50 md:hidden"
+                aria-label="ปิดเมนู"
+                className="grid size-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:bg-slate-50 md:hidden"
               >
-                ✕
+                <X className="size-4.5" />
               </button>
             </div>
 
@@ -174,10 +199,10 @@ export default function AdminShell({ children }) {
                       href={it.href}
                       onClick={() => setOpen(false)}
                       className={cx(
-                        "group flex items-center gap-3 rounded-2xl px-3 py-3 transition-all duration-200",
+                        "group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all duration-200",
                         active
-                          ? "bg-slate-900 text-white shadow-lg shadow-slate-200"
-                          : "text-slate-700 hover:translate-x-1 hover:bg-slate-100",
+                          ? "bg-brand-blue-bright text-white shadow-(--shadow-soft)"
+                          : "text-slate-700 hover:bg-brand-ice",
                       )}
                     >
                       <Icon name={it.key} active={active} />
@@ -188,7 +213,7 @@ export default function AdminShell({ children }) {
                         <div
                           className={cx(
                             "mt-0.5 text-[11px] font-medium leading-none",
-                            active ? "text-white/60" : "text-slate-400",
+                            active ? "text-white/70" : "text-slate-400",
                           )}
                         >
                           {it.desc}
@@ -200,9 +225,10 @@ export default function AdminShell({ children }) {
               </div>
 
               {/* Tips Section */}
-              <div className="mt-8 rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                  <span className="text-amber-500">💡</span> Help Tip
+              <div className="mt-8 rounded-2xl border border-(--brand-sky)/20 bg-(--brand-sky)/5 p-4">
+                <div className="flex items-center gap-2 text-xs font-bold text-brand-navy">
+                  <Lightbulb className="size-4 text-brand-blue" />
+                  Help Tip
                 </div>
                 <div className="mt-2 text-[11px] font-medium leading-relaxed text-slate-500">
                   คุณสามารถจัดการข้อมูลการรีวิวและดูรายงานสรุปผลได้ทันทีผ่านเมนูซ้ายมือ
@@ -211,18 +237,16 @@ export default function AdminShell({ children }) {
             </nav>
 
             {/* Logout & Footer */}
-            <div className="mt-auto border-t bg-slate-50/30 p-4">
+            <div className="mt-auto border-t border-slate-200/70 bg-brand-ice p-4">
               <button
                 onClick={logout}
-                className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 transition-all hover:bg-red-100 active:scale-[0.98]"
+                className="btn-danger group w-full py-3!"
               >
+                <LogOut className="size-4" />
                 Logout System
-                <span className="transition-transform group-hover:translate-x-1">
-                  →
-                </span>
               </button>
               <div className="mt-3 text-center text-[10px] font-bold tracking-wider text-slate-400">
-                © {new Date().getFullYear()} REVIEW SYSTEM V2
+                © {new Date().getFullYear()} 9EXPERT REVIEW SYSTEM
               </div>
             </div>
           </div>
@@ -231,17 +255,20 @@ export default function AdminShell({ children }) {
         {/* Main Content Area */}
         <div className="flex min-h-screen flex-1 flex-col overflow-hidden">
           {/* Desktop Topbar */}
-          <header className="sticky top-0 z-30 hidden w-full border-b bg-white/80 backdrop-blur md:block">
+          <header className="sticky top-0 z-30 hidden w-full border-b border-slate-200/70 bg-white/85 backdrop-blur md:block">
             <div className="flex items-center justify-between px-8 py-5">
               <div>
-                <div className="text-xl font-extrabold tracking-tight text-slate-900">
+                <div className="text-xl font-extrabold tracking-tight text-brand-navy">
                   {title}
                 </div>
-                <div className="mt-0.5 flex items-center gap-2">
-                  <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
-                  <div className="text-[10px] font-mono uppercase tracking-tight text-slate-400">
-                    Admin Session Active • {pathname}
-                  </div>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight text-emerald-700">
+                    <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+                    Admin Session Active
+                  </span>
+                  <span className="font-mono text-[10px] tracking-tight text-slate-400">
+                    {pathname}
+                  </span>
                 </div>
               </div>
 
@@ -249,14 +276,13 @@ export default function AdminShell({ children }) {
                 <Link
                   href="/"
                   target="_blank"
-                  className="rounded-xl border bg-white px-4 py-2.5 text-xs font-bold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-95"
+                  className="btn-ghost text-xs!"
                 >
-                  View Website ↗
+                  <ExternalLink className="size-4" />
+                  View Website
                 </Link>
-                <button
-                  onClick={logout}
-                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-bold text-red-700 shadow-sm transition-all hover:bg-red-100 active:scale-95"
-                >
+                <button onClick={logout} className="btn-danger text-xs!">
+                  <LogOut className="size-4" />
                   Logout
                 </button>
               </div>
@@ -266,7 +292,7 @@ export default function AdminShell({ children }) {
           {/* Main Slot */}
           <main className="flex-1 overflow-auto p-4 md:p-8 lg:p-10">
             <div className="mx-auto max-w-6xl">
-              <div className="min-h-[calc(100vh-12rem)] rounded-[2.5rem] border border-slate-200/60 bg-white p-6 shadow-xl shadow-slate-200/40 transition-all md:p-10">
+              <div className="min-h-[calc(100vh-12rem)] rounded-3xl border border-slate-200/70 bg-white p-5 shadow-(--shadow-soft-lg) transition-all md:p-8 lg:p-10">
                 {children}
               </div>
             </div>

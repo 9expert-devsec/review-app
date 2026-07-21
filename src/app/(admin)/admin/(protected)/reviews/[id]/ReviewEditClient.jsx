@@ -4,6 +4,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import {
+  ArrowLeft,
+  Trash2,
+  Upload,
+  ImageOff,
+  ExternalLink,
+  AlertCircle,
+  CheckCircle2,
+  X,
+} from "lucide-react";
 import ImageLightbox from "@/components/ui/ImageLightbox";
 import AvatarCropModal from "@/components/ui/AvatarCropModal";
 import {
@@ -60,20 +70,8 @@ function Field({ label, required, hint, children }) {
 
 function Pill({ on, children }) {
   return (
-    <span
-      className={cx(
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold",
-        on
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-          : "border-slate-200 bg-slate-50 text-slate-600",
-      )}
-    >
-      <span
-        className={cx(
-          "size-2 rounded-full",
-          on ? "bg-emerald-500" : "bg-slate-400",
-        )}
-      />
+    <span className={cx("badge", on ? "badge-active" : "badge-muted")}>
+      <span className="badge-dot" />
       {children}
     </span>
   );
@@ -231,14 +229,14 @@ function Switch({ checked, onChange, labelOn, labelOff }) {
       type="button"
       onClick={() => onChange(!checked)}
       className={cx(
-        "flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition",
+        "flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-all",
         checked
-          ? "border-emerald-200 bg-emerald-50"
-          : "border-slate-200 bg-white hover:bg-slate-50",
+          ? "border-(--brand-blue)/25 bg-(--brand-blue-bright)/10"
+          : "border-slate-200 bg-white hover:bg-brand-ice",
       )}
     >
       <div>
-        <div className="text-sm font-semibold text-slate-900">
+        <div className="text-sm font-semibold text-brand-navy">
           {checked ? labelOn : labelOff}
         </div>
         <div className="mt-0.5 text-xs text-slate-500">
@@ -248,9 +246,9 @@ function Switch({ checked, onChange, labelOn, labelOff }) {
 
       <div
         className={cx(
-          "relative h-7 w-12 rounded-full border transition",
+          "relative h-7 w-12 rounded-full border transition-all",
           checked
-            ? "border-emerald-200 bg-emerald-500"
+            ? "border-brand-blue bg-brand-blue-bright"
             : "border-slate-200 bg-slate-100",
         )}
       >
@@ -684,23 +682,27 @@ export default function ReviewEditClient({ id }) {
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="text-sm text-slate-500">
-            <Link href={`${adminBase}/reviews`} className="hover:underline">
+            <Link
+              href={`${adminBase}/reviews`}
+              className="font-medium text-brand-blue hover:underline"
+            >
               Reviews
             </Link>{" "}
-            <span className="mx-1">/</span> Edit
+            <span className="mx-1 text-slate-300">/</span> Edit
           </div>
-          <div className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">
+          <div className="mt-1 text-2xl font-extrabold tracking-tight text-brand-navy">
             Edit Review
           </div>
-          <div className="mt-1 text-xs text-slate-500 break-all">{id}</div>
+          <div className="mt-1 text-xs text-slate-400 break-all">{id}</div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={`${adminBase}/reviews`}>← กลับไป List</Link>
-          <button
-            onClick={remove}
-            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
-          >
+          <Link href={`${adminBase}/reviews`} className="btn-ghost">
+            <ArrowLeft className="size-4" />
+            กลับไป List
+          </Link>
+          <button onClick={remove} className="btn-danger">
+            <Trash2 className="size-4" />
             ลบ
           </button>
         </div>
@@ -708,28 +710,28 @@ export default function ReviewEditClient({ id }) {
 
       {/* Alerts */}
       {err && (
-        <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
-          {err}
+        <div className="mt-5 flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+          <AlertCircle className="mt-0.5 size-5 shrink-0" />
+          <span>{err}</span>
         </div>
       )}
       {okMsg && (
-        <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
-          {okMsg}
+        <div className="mt-5 flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+          <CheckCircle2 className="mt-0.5 size-5 shrink-0" />
+          <span>{okMsg}</span>
         </div>
       )}
 
       {/* Body */}
       {loading || !item ? (
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-slate-500">
-          Loading...
-        </div>
+        <div className="card mt-6 p-5 text-slate-500">Loading...</div>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Left: Form */}
           <div className="lg:col-span-7">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="card p-5">
               <div className="flex items-center justify-between">
-                <div className="text-base font-semibold text-slate-900">
+                <div className="text-base font-semibold text-brand-navy">
                   Review Details
                 </div>
                 <Pill on={!!isActive}>{isActive ? "Active" : "Off"}</Pill>
@@ -739,7 +741,7 @@ export default function ReviewEditClient({ id }) {
                 <div className="md:col-span-2">
                   <Field label="Course" required hint="เลือกคอร์สที่รีวิว">
                     <select
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                      className="input"
                       value={courseId}
                       onChange={(e) => setCourseId(e.target.value)}
                     >
@@ -758,7 +760,7 @@ export default function ReviewEditClient({ id }) {
 
                 <Field label="ชื่อ-นามสกุล" required>
                   <input
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                    className="input"
                     value={reviewerName}
                     onChange={(e) => setReviewerName(e.target.value)}
                   />
@@ -766,7 +768,7 @@ export default function ReviewEditClient({ id }) {
 
                 <Field label="อีเมล" required>
                   <input
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                    className="input"
                     value={reviewerEmail}
                     onChange={(e) => setReviewerEmail(e.target.value)}
                   />
@@ -774,7 +776,7 @@ export default function ReviewEditClient({ id }) {
 
                 <Field label="บริษัท/องค์กร">
                   <input
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                    className="input"
                     value={reviewerCompany}
                     onChange={(e) => setReviewerCompany(e.target.value)}
                   />
@@ -782,7 +784,7 @@ export default function ReviewEditClient({ id }) {
 
                 <Field label="ตำแหน่งงาน">
                   <input
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                    className="input"
                     value={reviewerRole}
                     onChange={(e) => setReviewerRole(e.target.value)}
                   />
@@ -800,10 +802,10 @@ export default function ReviewEditClient({ id }) {
                             type="button"
                             onClick={() => setRating(v)}
                             className={cx(
-                              "rounded-2xl border px-3 py-2 text-sm font-semibold transition",
+                              "rounded-xl border px-3 py-2 text-sm font-semibold transition-all active:scale-95",
                               on
-                                ? "border-slate-900 bg-slate-900 text-white"
-                                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                                ? "border-brand-blue bg-brand-blue-bright text-white"
+                                : "border-slate-200 bg-white text-slate-700 hover:bg-brand-ice",
                             )}
                             title={`${v} ดาว`}
                           >
@@ -811,7 +813,7 @@ export default function ReviewEditClient({ id }) {
                           </button>
                         );
                       })}
-                      <div className="ml-1 text-sm font-semibold text-slate-700">
+                      <div className="ml-1 text-sm font-semibold text-brand-lime-dark">
                         {starsText(rating)}
                       </div>
                       <div className="ml-auto">
@@ -819,7 +821,7 @@ export default function ReviewEditClient({ id }) {
                           type="number"
                           min="1"
                           max="5"
-                          className="w-24 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                          className="input w-24"
                           value={rating}
                           onChange={(e) =>
                             setRating(clampRating(e.target.value))
@@ -833,7 +835,7 @@ export default function ReviewEditClient({ id }) {
                 <div className="md:col-span-2">
                   <Field label="หัวข้อรีวิว">
                     <input
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                      className="input"
                       value={headline}
                       onChange={(e) => setHeadline(e.target.value)}
                     />
@@ -844,7 +846,7 @@ export default function ReviewEditClient({ id }) {
                   <Field label="รายละเอียดรีวิว/คำติชม">
                     <textarea
                       rows={7}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                      className="input"
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
                     />
@@ -869,11 +871,12 @@ export default function ReviewEditClient({ id }) {
 
             {/* Sticky actions */}
             <div className="sticky bottom-4 mt-4">
-              <div className="rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-lg backdrop-blur">
+              <div className="rounded-3xl border border-slate-200/70 bg-white/90 p-4 shadow-(--shadow-soft-lg) backdrop-blur">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-sm text-slate-600">
                     {dirty ? (
-                      <span className="font-semibold text-amber-700">
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-amber-700">
+                        <span className="size-2 rounded-full bg-amber-500" />
                         มีการแก้ไขที่ยังไม่บันทึก
                       </span>
                     ) : (
@@ -898,16 +901,13 @@ export default function ReviewEditClient({ id }) {
                   </div>
 
                   <div className="flex items-center justify-end gap-2">
-                    <Link
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                      href={`${adminBase}/reviews`}
-                    >
+                    <Link className="btn-ghost" href={`${adminBase}/reviews`}>
                       ยกเลิก
                     </Link>
                     <button
                       disabled={!canSave || !dirty || saving || avatarBusy}
                       onClick={save}
-                      className="rounded-2xl bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                      className="btn-primary px-5!"
                     >
                       {avatarBusy
                         ? "กำลังอัปโหลดรูป..."
@@ -923,10 +923,10 @@ export default function ReviewEditClient({ id }) {
 
           {/* Right: Preview */}
           <div className="lg:col-span-5">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="card p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-sm font-semibold text-slate-900">
+                  <div className="text-sm font-semibold text-brand-navy">
                     Preview (Landing)
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
@@ -936,41 +936,29 @@ export default function ReviewEditClient({ id }) {
                 <Pill on={!!isActive}>{isActive ? "Active" : "Off"}</Pill>
               </div>
 
-              <div className="mt-4 rounded-3xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4">
-                <div className="text-xs font-semibold text-slate-600">
-                  Course
-                </div>
-                <div className="mt-1 text-sm font-extrabold text-slate-900 line-clamp-2">
-                  {selectedCourseName}
-                </div>
-
-                <div className="mt-4 flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900 line-clamp-1">
-                      {clean(reviewerName) || "-"}
-                    </div>
-                    <div className="mt-0.5 text-xs text-slate-500 line-clamp-1">
-                      {clean(reviewerRole) || ""}
-                      {clean(reviewerRole) && clean(reviewerCompany)
-                        ? " • "
-                        : ""}
-                      {clean(reviewerCompany) || ""}
-                    </div>
+              <div className="mt-4 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-(--shadow-soft)">
+                <div className="h-1.5 w-full bg-linear-to-r from-brand-blue via-brand-sky to-brand-lime" />
+                <div className="p-5">
+                  <div className="inline-flex rounded-full bg-(--brand-blue-bright)/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-blue">
+                    {selectedCourseName}
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-extrabold text-slate-900">
-                      {clampRating(rating)}.0
-                    </div>
-                    <div className="text-xs font-semibold text-slate-600">
+
+                  {/* Rating stars */}
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-lg leading-none text-brand-lime-dark">
                       {starsText(rating)}
-                    </div>
+                    </span>
+                    <span className="text-sm font-extrabold text-brand-navy">
+                      {clampRating(rating)}.0
+                    </span>
                   </div>
-                </div>
 
-                <div className="mt-4">
-                  <div className="text-sm font-extrabold text-slate-900 line-clamp-2">
+                  {/* Headline */}
+                  <div className="mt-3 text-base font-extrabold text-brand-navy line-clamp-2">
                     {clean(headline) || "-"}
                   </div>
+
+                  {/* Body */}
                   <div className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
                     {comment ? (
                       comment
@@ -980,12 +968,42 @@ export default function ReviewEditClient({ id }) {
                       </span>
                     )}
                   </div>
+
+                  {/* Reviewer */}
+                  <div className="mt-4 flex items-center gap-3 border-t border-slate-100 pt-4">
+                    <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-(--brand-blue-bright)/10 text-sm font-bold text-brand-blue">
+                      {avatarDisplayUrl ? (
+                        <img
+                          src={
+                            cloudinaryAvatarThumb(avatarDisplayUrl, 80) ||
+                            avatarDisplayUrl
+                          }
+                          alt="avatar"
+                          className="h-full w-full object-cover object-top"
+                        />
+                      ) : (
+                        (clean(reviewerName) || "?").slice(0, 1).toUpperCase()
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-brand-navy line-clamp-1">
+                        {clean(reviewerName) || "-"}
+                      </div>
+                      <div className="mt-0.5 text-xs text-slate-500 line-clamp-1">
+                        {clean(reviewerRole) || ""}
+                        {clean(reviewerRole) && clean(reviewerCompany)
+                          ? " • "
+                          : ""}
+                        {clean(reviewerCompany) || ""}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Avatar manager */}
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="flex items-center justify-between gap-3">
+              <div className="card mt-4 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <div className="text-xs font-semibold text-slate-600">
                       Avatar (รูปโปรไฟล์)
@@ -1006,8 +1024,9 @@ export default function ReviewEditClient({ id }) {
                     <button
                       type="button"
                       onClick={() => fileRef.current?.click()}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+                      className="btn-ghost min-h-9! px-3! text-xs!"
                     >
+                      <Upload className="size-4" />
                       อัปโหลดใหม่
                     </button>
                     <button
@@ -1019,28 +1038,30 @@ export default function ReviewEditClient({ id }) {
                         setAvatarRemove(true);
                         setAvatarErr("");
                       }}
-                      className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                      className="btn-danger min-h-9! px-3! text-xs! disabled:opacity-50"
                     >
+                      <ImageOff className="size-4" />
                       ลบรูป
                     </button>
                   </div>
                 </div>
 
                 {avatarErr ? (
-                  <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                    {avatarErr}
+                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                    <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                    <span>{avatarErr}</span>
                   </div>
                 ) : null}
 
                 {avatarInfo ? (
-                  <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-brand-ice px-3 py-2 text-xs text-slate-700">
                     {avatarInfo}
                   </div>
                 ) : null}
 
                 <div className="mt-3">
                   {avatarDisplayUrl ? (
-                    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-brand-ice p-3">
                       <button
                         type="button"
                         onClick={() =>
@@ -1085,8 +1106,9 @@ export default function ReviewEditClient({ id }) {
                             href={cloudinaryAvatarFull(avatarUrlCurrent)}
                             target="_blank"
                             rel="noreferrer"
-                            className="mt-1 inline-block text-xs font-semibold text-blue-700 underline decoration-blue-700/30 underline-offset-4 hover:text-blue-800"
+                            className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-brand-blue underline decoration-(--brand-blue)/30 underline-offset-4 hover:text-brand-blue-bright"
                           >
+                            <ExternalLink className="size-3.5" />
                             เปิดรูปในแท็บใหม่
                           </a>
                         ) : null}
@@ -1101,14 +1123,15 @@ export default function ReviewEditClient({ id }) {
                             setAvatarRemove(false);
                             setAvatarErr("");
                           }}
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                          className="btn-ghost min-h-9! px-3! text-xs!"
                         >
+                          <X className="size-4" />
                           ยกเลิก
                         </button>
                       ) : null}
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-6 text-center text-xs text-slate-500">
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-brand-ice px-3 py-8 text-center text-xs text-slate-500">
                       ไม่มีรูปโปรไฟล์
                     </div>
                   )}
@@ -1116,7 +1139,7 @@ export default function ReviewEditClient({ id }) {
               </div>
 
               {/* Quick Info */}
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="card mt-4 p-4">
                 <div className="text-xs font-semibold text-slate-600">
                   Quick Info
                 </div>
@@ -1127,7 +1150,7 @@ export default function ReviewEditClient({ id }) {
                       {clean(reviewerEmail) || "-"}
                     </span>
                   </div>
-                  <div>
+                  <div className="flex items-center gap-2">
                     <span className="text-slate-500">Status:</span>{" "}
                     <span className="font-medium">{item.status || "-"}</span>
                   </div>
@@ -1135,11 +1158,15 @@ export default function ReviewEditClient({ id }) {
               </div>
 
               {dirty ? (
-                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                  มีการแก้ไขที่ยังไม่บันทึก — กด “บันทึก” เพื่ออัปเดตข้อมูล
+                <div className="mt-4 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                  <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                  <span>
+                    มีการแก้ไขที่ยังไม่บันทึก — กด “บันทึก” เพื่ออัปเดตข้อมูล
+                  </span>
                 </div>
               ) : (
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                <div className="mt-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-brand-ice p-4 text-sm text-slate-600">
+                  <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
                   ข้อมูลล่าสุดถูกบันทึกแล้ว
                 </div>
               )}

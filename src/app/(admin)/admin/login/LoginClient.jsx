@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LogIn, Mail, Lock, AlertCircle } from "lucide-react";
 
 export default function LoginClient() {
   const router = useRouter();
@@ -32,45 +33,75 @@ export default function LoginClient() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-brand-ice p-6 text-brand-navy">
+      {/* Subtle branded background glow */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(60rem 40rem at 50% -10%, color-mix(in srgb, var(--brand-sky) 18%, transparent), transparent 60%)",
+        }}
+      />
+
       <form
         onSubmit={onSubmit}
-        className="w-full max-w-md rounded-2xl border bg-white p-6"
+        className="card relative w-full max-w-md p-7 sm:p-8"
       >
-        <h1 className="text-2xl font-semibold text-slate-900">Admin Login</h1>
+        {/* Brand header */}
+        <div className="flex flex-col items-center text-center">
+          <div className="grid size-12 place-items-center rounded-2xl bg-brand-blue-bright text-lg font-black text-white shadow-(--shadow-soft)">
+            9
+          </div>
+          <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-brand-navy">
+            9<span className="text-brand-blue-bright">Expert</span> Admin
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            เข้าสู่ระบบเพื่อจัดการรีวิว
+          </p>
+        </div>
 
         {err && (
-          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-red-700 text-sm">
-            {err}
+          <div className="mt-6 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            <span>{err}</span>
           </div>
         )}
 
-        <div className="mt-5 space-y-3">
+        <div className="mt-6 space-y-4">
           <div>
-            <label className="text-sm text-slate-600">Email</label>
-            <input
-              className="mt-1 w-full rounded-xl border px-3 py-2"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
-            />
+            <label className="text-xs font-semibold text-slate-600">Email</label>
+            <div className="relative mt-1.5">
+              <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+              <input
+                className="input pl-10!"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                placeholder="you@9expert.co.th"
+              />
+            </div>
           </div>
           <div>
-            <label className="text-sm text-slate-600">Password</label>
-            <input
-              className="mt-1 w-full rounded-xl border px-3 py-2"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-            />
+            <label className="text-xs font-semibold text-slate-600">
+              Password
+            </label>
+            <div className="relative mt-1.5">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+              <input
+                className="input pl-10!"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                placeholder="••••••••"
+              />
+            </div>
           </div>
         </div>
 
-        <button
-          disabled={loading}
-          className="mt-6 w-full rounded-xl bg-slate-900 px-4 py-2 text-white disabled:opacity-60"
-        >
+        <button disabled={loading} className="btn-primary mt-6 w-full py-2.5!">
+          <LogIn className="size-4" />
           {loading ? "Signing in..." : "Sign in"}
         </button>
       </form>

@@ -2,6 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  ArrowLeft,
+  Download,
+  ExternalLink,
+  AlertCircle,
+  FileSpreadsheet,
+  Info,
+} from "lucide-react";
 
 export default function ReportsClient() {
   const [courses, setCourses] = useState([]);
@@ -45,91 +53,104 @@ export default function ReportsClient() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Reports Export</h1>
-        <Link
-          href="/admin/reviews"
-          className="rounded-xl border bg-white px-3 py-2 text-sm hover:bg-slate-50"
-        >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-brand-navy">
+            Reports Export
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            ดาวน์โหลดรีวิวเป็นไฟล์ CSV ตามเงื่อนไขที่เลือก
+          </p>
+        </div>
+        <Link href="/admin/reviews" className="btn-ghost self-start sm:self-auto">
+          <ArrowLeft className="size-4" />
           กลับไป Reviews
         </Link>
       </div>
 
       {err && (
-        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-red-700">
-          {err}
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-red-700">
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          <span>{err}</span>
         </div>
       )}
 
-      <div className="mt-4 grid grid-cols-1 gap-3 rounded-2xl border bg-white p-4 md:grid-cols-6">
-        <div className="md:col-span-3">
-          <div className="text-xs text-slate-500">Course</div>
-          <select
-            className="mt-1 w-full rounded-xl border px-3 py-2"
-            value={courseId}
-            onChange={(e) => setCourseId(e.target.value)}
-          >
-            <option value="">ทั้งหมด</option>
-            {courses.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+      <div className="card mt-6 p-5">
+        <div className="flex items-center gap-2 text-sm font-semibold text-brand-navy">
+          <FileSpreadsheet className="size-4 text-brand-blue" />
+          ตัวกรองการ Export
         </div>
 
-        <div className="md:col-span-3">
-          <div className="text-xs text-slate-500">Active</div>
-          <select
-            className="mt-1 w-full rounded-xl border px-3 py-2"
-            value={active}
-            onChange={(e) => setActive(e.target.value)}
-          >
-            <option value="">ทั้งหมด</option>
-            <option value="1">Active</option>
-            <option value="0">Off</option>
-          </select>
-        </div>
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-6">
+          <div className="md:col-span-3">
+            <div className="text-xs font-semibold text-slate-600">Course</div>
+            <select
+              className="input mt-1"
+              value={courseId}
+              onChange={(e) => setCourseId(e.target.value)}
+            >
+              <option value="">ทั้งหมด</option>
+              {courses.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="md:col-span-3">
-          <div className="text-xs text-slate-500">From</div>
-          <input
-            className="mt-1 w-full rounded-xl border px-3 py-2"
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-          />
-        </div>
+          <div className="md:col-span-3">
+            <div className="text-xs font-semibold text-slate-600">Active</div>
+            <select
+              className="input mt-1"
+              value={active}
+              onChange={(e) => setActive(e.target.value)}
+            >
+              <option value="">ทั้งหมด</option>
+              <option value="1">Active</option>
+              <option value="0">Off</option>
+            </select>
+          </div>
 
-        <div className="md:col-span-3">
-          <div className="text-xs text-slate-500">To</div>
-          <input
-            className="mt-1 w-full rounded-xl border px-3 py-2"
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-          />
-        </div>
+          <div className="md:col-span-3">
+            <div className="text-xs font-semibold text-slate-600">From</div>
+            <input
+              className="input mt-1"
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+          </div>
 
-        <div className="md:col-span-6 flex items-center justify-end gap-2">
-          <a
-            className="rounded-xl border bg-white px-4 py-2 text-sm hover:bg-slate-50"
-            href={exportUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            ทดสอบลิงก์ Export
-          </a>
-          <button
-            onClick={download}
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm text-white"
-          >
-            Download CSV
-          </button>
+          <div className="md:col-span-3">
+            <div className="text-xs font-semibold text-slate-600">To</div>
+            <input
+              className="input mt-1"
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </div>
+
+          <div className="md:col-span-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+            <a
+              className="btn-ghost"
+              href={exportUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <ExternalLink className="size-4" />
+              ทดสอบลิงก์ Export
+            </a>
+            <button onClick={download} className="btn-primary">
+              <Download className="size-4" />
+              Download CSV
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="mt-3 text-sm text-slate-500">
+      <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
+        <Info className="size-4 shrink-0 text-brand-sky" />
         ไฟล์ CSV มี BOM รองรับภาษาไทยใน Excel
       </div>
     </div>
