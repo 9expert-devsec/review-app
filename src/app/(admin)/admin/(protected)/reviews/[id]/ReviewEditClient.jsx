@@ -690,7 +690,7 @@ export default function ReviewEditClient({ id }) {
             </Link>{" "}
             <span className="mx-1 text-slate-300">/</span> Edit
           </div>
-          <div className="mt-1 text-2xl font-extrabold tracking-tight text-brand-navy">
+          <div className="mt-1 font-head text-2xl font-extrabold tracking-tight text-brand-navy">
             Edit Review
           </div>
           <div className="mt-1 text-xs text-slate-400 break-all">{id}</div>
@@ -731,7 +731,7 @@ export default function ReviewEditClient({ id }) {
           <div className="lg:col-span-7">
             <div className="card p-5">
               <div className="flex items-center justify-between">
-                <div className="text-base font-semibold text-brand-navy">
+                <div className="font-head text-base font-semibold text-brand-navy">
                   Review Details
                 </div>
                 <Pill on={!!isActive}>{isActive ? "Active" : "Off"}</Pill>
@@ -926,7 +926,7 @@ export default function ReviewEditClient({ id }) {
             <div className="card p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-sm font-semibold text-brand-navy">
+                  <div className="font-head text-sm font-semibold text-brand-navy">
                     Preview (Landing)
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
@@ -939,12 +939,13 @@ export default function ReviewEditClient({ id }) {
               <div className="mt-4 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-(--shadow-soft)">
                 <div className="h-1.5 w-full bg-linear-to-r from-brand-blue via-brand-sky to-brand-lime" />
                 <div className="p-5">
-                  <div className="inline-flex rounded-full bg-(--brand-blue-bright)/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-blue">
+                  {/* Course = public testimonial title (const title = course || headline) */}
+                  <div className="font-head text-lg font-extrabold leading-snug text-brand-navy line-clamp-2">
                     {selectedCourseName}
                   </div>
 
                   {/* Rating stars */}
-                  <div className="mt-3 flex items-center gap-2">
+                  <div className="mt-2 flex items-center gap-2">
                     <span className="text-lg leading-none text-brand-lime-dark">
                       {starsText(rating)}
                     </span>
@@ -953,13 +954,8 @@ export default function ReviewEditClient({ id }) {
                     </span>
                   </div>
 
-                  {/* Headline */}
-                  <div className="mt-3 text-base font-extrabold text-brand-navy line-clamp-2">
-                    {clean(headline) || "-"}
-                  </div>
-
                   {/* Body */}
-                  <div className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                  <div className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">
                     {comment ? (
                       comment
                     ) : (

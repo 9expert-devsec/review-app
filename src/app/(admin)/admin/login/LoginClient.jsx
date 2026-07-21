@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { LogIn, Mail, Lock, AlertCircle } from "lucide-react";
 
@@ -50,9 +51,14 @@ export default function LoginClient() {
       >
         {/* Brand header */}
         <div className="flex flex-col items-center text-center">
-          <div className="grid size-12 place-items-center rounded-2xl bg-brand-blue-bright text-lg font-black text-white shadow-(--shadow-soft)">
-            9
-          </div>
+          <Image
+            src="/logo/9exp-stand.png"
+            alt="9Expert"
+            width={56}
+            height={56}
+            priority
+            className="rounded-2xl"
+          />
           <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-brand-navy">
             9<span className="text-brand-blue-bright">Expert</span> Admin
           </h1>
